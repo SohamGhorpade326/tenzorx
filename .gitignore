@@ -1,0 +1,89 @@
+# --- General ---
+.DS_Store
+*.log
+logs/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# --- System ---
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.sln
+
+# --- Frontend (Vite/React) ---
+node_modules/
+dist/
+dist-ssr/
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+
+# --- Backend (Python/FastAPI) ---
+backend/__pycache__/
+backend/venv/
+backend/.venv/
+backend/env/
+backend/.env/
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/share/python-wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
+backend/MANIFEST
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.tox/
+backend/.nox/
+backend/.coverage
+backend/htmlcov/
+backend/nosetests.xml
+backend/coverage.xml
+backend/*.pyc
+backend/*.pyo
+
+# --- Environment Secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env
+frontend/.env.local
+backend/.env
+backend/.env.local
+
+# --- Project Specific Data ---
+# Video and Audio recordings
+*.mp4
+*.webm
+*.m4a
+*.wav
+*.mp3
+
+# Backend Data Exports and Local DBs
+backend/data/github_exports/*.json
+backend/db/*.sqlite3
+backend/db/*.db
+# Keep sample files, but ignore other additions if needed
+# backend/data/sample_*.txt
+
+# Ignore specific large files or uploads if they end up here
+/uploads/

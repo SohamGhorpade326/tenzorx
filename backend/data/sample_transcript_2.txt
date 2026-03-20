@@ -1,0 +1,35 @@
+Meeting: Sprint Retrospective
+Date: March 18, 2026
+Attendees: Dev Team (Rahul Mehta, Karan Patel, Meera Joshi, Tom Bradley)
+
+Tom: Let's do our retrospective. What went well?
+
+Rahul: The CI/CD pipeline improvements were great. Deployments are now 40% faster. Kudos to Karan.
+
+Karan: Thanks. But we had some issues with the test suite. Too many flaky tests caused false failures. Meera, can you own the effort to clean up flaky tests? Let's target having it done by March 27th.
+
+Meera: Agreed. I'll audit all the flaky tests and stabilize them by March 27th.
+
+Tom: What didn't go well?
+
+Rahul: We need better code review culture. PRs were sitting for 3-4 days without reviews. I propose we implement a 24-hour review SLA. I'll write up a team agreement document by March 22nd.
+
+Tom: Good idea. Anyone else?
+
+Meera: We should also complete the security audit that's been on the backlog forever. It's critical given the recent auth bug. Tom, can you assign that to Rahul? He has the most context on the security layer.
+
+Tom: Rahul, can you complete the security audit by March 25th?
+
+Rahul: I can do it. March 25th works.
+
+Karan: One blocker I want to raise — we're waiting on the design team for the new dashboard mockups. Without those, we can't start the frontend sprint. Can Tom follow up with the design lead?
+
+Tom: I'll ping Sarah today and get the dashboard mockups by March 21st. I'll send them to the team right after.
+
+Rahul: Should we also update the API documentation with the changes from this sprint? It's always out of date.
+
+Karan: Yeah, let's add that. Rahul, since you're writing the review SLA document anyway, can you add the API docs update too, by the same date — March 22nd?
+
+Rahul: Sure, I'll bundle both. Review SLA doc and API docs update — March 22nd.
+
+Tom: Alright, great session everyone. Let's make this our most productive sprint yet.

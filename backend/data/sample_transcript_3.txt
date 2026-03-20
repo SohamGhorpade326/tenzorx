@@ -1,0 +1,33 @@
+Meeting: Client Sync — Acme Corp
+Date: March 19, 2026
+Attendees: Priya Sharma (PM), Vikram Nair (Sales), Rachel Chen (Acme Corp)
+
+Rachel: Thanks for joining. We had a few concerns from our side about the delivery timeline.
+
+Priya: Of course. Let's go through them. What's the most pressing concern?
+
+Rachel: The integration with our internal CRM — we were expecting it to be done last week. What's the status?
+
+Vikram: I apologize for the delay, Rachel. The CRM integration is 80% complete. Priya, can we commit to delivering that by March 28th?
+
+Priya: Yes, absolutely. I'll personally ensure the CRM integration is delivered and fully tested by March 28th.
+
+Rachel: We also need the UAT environment set up so our team can start testing. When can we have that?
+
+Priya: Vikram, can you handle getting the UAT environment spun up? I'd say by March 23rd.
+
+Vikram: Yes, UAT environment will be ready by March 23rd. I'll send Rachel the access credentials as well.
+
+Rachel: The other thing we need is updated API documentation for the v2 endpoints you shipped last month. Our developers are confused about the new authentication flow.
+
+Priya: That's a valid point. I'll have our tech lead Rahul update the API documentation for v2 endpoints and send it to you by March 25th. We'll include sample code for the new auth flow.
+
+Rachel: Great. One more thing — can we schedule a training session for our team on the new features? Maybe next week?
+
+Vikram: I can own that. I'll schedule a 90-minute training session with the Acme team for the week of March 25th. I'll send out a calendar invite by March 22nd.
+
+Rachel: That works. We're also thinking about expanding the contract to include the analytics module. Can you send us a proposal?
+
+Priya: Absolutely. I'll prepare and send a proposal for the analytics module extension by March 26th.
+
+Rachel: Perfect. Looking forward to it. Thanks everyone.
