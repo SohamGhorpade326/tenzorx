@@ -1,4 +1,4 @@
-# MeetingMind 🧠
+# Workstream AI 🧠
 
 > AI-powered meeting pipeline: record a meeting → Whisper transcribes → 6 LangGraph agents extract decisions, validate, create tasks, track deadlines, and escalate overdue items.
 
