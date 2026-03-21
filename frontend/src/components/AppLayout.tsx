@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Upload, CheckSquare, ScrollText, Bell, Settings,
-  Brain, Menu, X, Sun, Moon, Video
+  Brain, Menu, X, Sun, Moon, Video, Package, Clock, BarChart3, Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -18,6 +18,14 @@ const navItems = [
   { label: 'Audit Trail', icon: ScrollText, path: '/audit' },
   { label: 'Escalations', icon: Bell, path: '/escalations' },
   { label: 'Settings', icon: Settings, path: '/settings' },
+  // Procurement section
+  { label: 'Procurement', icon: Package, path: '/procurement', section: true },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/procurement'},
+  { label: 'New Request', icon: Upload, path: '/procurement/new' },
+  { label: 'Analytics', icon: BarChart3, path: '/procurement/analytics' },
+  { label: 'Vendors', icon: Building2, path: '/procurement/vendors' },
+  { label: 'Review Queue', icon: Clock, path: '/procurement/reviews' },
+  { label: 'Audit Log', icon: ScrollText, path: '/procurement/audit' },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -28,6 +36,12 @@ const pageTitles: Record<string, string> = {
   '/audit': 'Audit Trail',
   '/escalations': 'Escalations',
   '/settings': 'Settings',
+  '/procurement': 'Procurement Dashboard',
+  '/procurement/new': 'New Purchase Request',
+  '/procurement/analytics': 'Analytics Dashboard',
+  '/procurement/vendors': 'Vendor Intelligence',
+  '/procurement/reviews': 'Review Queue',
+  '/procurement/audit': 'Audit Log',
 };
 
 export default function AppLayout() {
@@ -75,8 +89,23 @@ export default function AppLayout() {
           </div>
 
           <nav className="flex-1 px-3 py-2 space-y-1 overflow-x-hidden overflow-y-auto">
-            {navItems.map(item => {
+            {navItems.map((item, idx) => {
               const active = location.pathname === item.path;
+              
+              // Section header
+              if ('section' in item && item.section) {
+                return (
+                  <div key={`section-${item.path}`}>
+                    {idx > 0 && <div className="my-2 border-t border-[#30363d]" />}
+                    {sidebarOpen && (
+                      <div className="px-3 py-2 text-xs font-semibold text-[#8b949e] uppercase tracking-wider">
+                        {item.label}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.path}

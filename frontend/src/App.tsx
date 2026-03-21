@@ -12,6 +12,13 @@ import AuditTrail from "@/pages/AuditTrail";
 import Escalations from "@/pages/Escalations";
 import SettingsPage from "@/pages/Settings";
 import NotFound from "./pages/NotFound.tsx";
+import ProcurementDashboard from "@/pages/procurement/ProcurementDashboard";
+import NewProcurementRequest from "@/pages/procurement/NewProcurementRequest";
+import ProcurementRunDetail from "@/pages/procurement/ProcurementRunDetail";
+import ProcurementReviews from "@/pages/procurement/ProcurementReviews";
+import ProcurementAuditLog from "@/pages/procurement/ProcurementAuditLog";
+import AnalyticsDashboard from "@/pages/procurement/AnalyticsDashboard";
+import VendorIntelligence from "@/pages/procurement/VendorIntelligence";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +37,14 @@ const App = () => (
             <Route path="/audit" element={<AuditTrail />} />
             <Route path="/escalations" element={<Escalations />} />
             <Route path="/settings" element={<SettingsPage />} />
+            {/* Procurement Routes */}
+            <Route path="/procurement" element={<ProcurementDashboard />} />
+            <Route path="/procurement/new" element={<NewProcurementRequest />} />
+            <Route path="/procurement/run/:runId" element={<ProcurementRunDetail />} />
+            <Route path="/procurement/reviews" element={<ProcurementReviews />} />
+            <Route path="/procurement/audit" element={<ProcurementAuditLog />} />
+            <Route path="/procurement/analytics" element={<AnalyticsDashboard />} />
+            <Route path="/procurement/vendors" element={<VendorIntelligence />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
