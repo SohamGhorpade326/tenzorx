@@ -26,6 +26,8 @@ frontend/blob-report/
 frontend/playwright/.cache/
 
 # --- Backend (Python/FastAPI) ---
+__pycache__/
+*.py[cod]
 backend/__pycache__/
 backend/venv/
 backend/.venv/

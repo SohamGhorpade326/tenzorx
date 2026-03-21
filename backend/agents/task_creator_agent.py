@@ -30,11 +30,11 @@ ENRICH_PROMPT = """You are a project management AI. For this task extracted from
 3. Acceptance criteria: 2-3 bullet points defining what "done" looks like
 
 Return ONLY valid JSON (no markdown):
-{
+{{
   "priority": "HIGH" | "MEDIUM" | "LOW",
   "description": "...",
   "acceptance_criteria": ["criterion 1", "criterion 2", "criterion 3"]
-}
+}}
 
 Task: {task_text}
 Owner: {owner}
@@ -49,13 +49,21 @@ def run(
 ) -> List[Task]:
     start = time.time()
     tasks = []
+    seen = set()
 
     for decision in decisions:
         if not decision.is_actionable:
             continue
 
+        if not (decision.text or "").strip():
+            continue
+
         task = _create_task(decision, meeting_title, run_id, meeting_id)
         if task:
+            dedupe_key = (task.title or "").strip().lower(), (task.owner or "UNASSIGNED").strip().lower()
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
             tasks.append(task)
 
     # Export GitHub Issues-compatible JSON

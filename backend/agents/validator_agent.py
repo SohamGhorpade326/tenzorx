@@ -26,7 +26,7 @@ from db.db import insert_audit_event
 ACTIONABILITY_PROMPT = """You are a meeting analyst. For each item below, determine if it is a genuine actionable task (someone must DO something) or just an observation / statement of fact.
 
 Return a JSON array with the same length, where each item is:
-{"index": 0, "is_actionable": true/false, "reason": "brief explanation"}
+{{"index": 0, "is_actionable": true/false, "reason": "brief explanation"}}
 
 Items:
 {items}
@@ -100,7 +100,7 @@ def _rule_check(decisions: List[Decision]) -> Tuple[List[dict], List[Decision]]:
                 "issue": dec.flag_reason,
                 "text": dec.text,
                 "suggestedFix": _suggest_fix(dec, issues),
-                "decision": dec.dict(),
+                "decision": dec.model_dump(mode="json"),
             })
 
         clean.append(dec)  # Keep all — flagged items still go to task creation
@@ -166,16 +166,28 @@ def _llm_check(decisions: List[Decision], run_id: str = None) -> Tuple[List[Deci
         raw = response.content.strip()
         match = re.search(r'\[.*\]', raw, re.DOTALL)
 
-        non_actionable_flags = []
         if match:
             results = json.loads(match.group())
-            non_actionable_indices = {r["index"] for r in results if not r.get("is_actionable", True)}
+            # Be defensive: model output may miss "index" or return non-int values.
+            index_map = {}
+            non_actionable_indices = set()
+            for pos, item in enumerate(results):
+                if not isinstance(item, dict):
+                    continue
+                raw_index = item.get("index", pos)
+                try:
+                    idx = int(raw_index)
+                except (TypeError, ValueError):
+                    continue
+                index_map[idx] = item
+                if not item.get("is_actionable", True):
+                    non_actionable_indices.add(idx)
 
             validated = []
             non_actionable = []
             for i, dec in enumerate(decisions):
                 if i in non_actionable_indices:
-                    reason = next((r.get("reason", "") for r in results if r["index"] == i), "")
+                    reason = index_map.get(i, {}).get("reason", "")
                     non_actionable.append({
                         "issue": "Not actionable (observation)",
                         "text": dec.text,

@@ -23,7 +23,7 @@ from langchain.schema import HumanMessage, SystemMessage
 
 from config import GROQ_API_KEY, GROQ_MODEL, WHISPER_MODEL_SIZE, DEMO_MODE
 from models.schemas import Decision, AuditEvent, AuditStatus
-from db.db import insert_audit_event
+from db.db import insert_audit_event, update_meeting_transcript
 
 
 SYSTEM_PROMPT = """You are a meeting analysis AI. Extract all decisions, commitments, and action items from the provided meeting transcript.
@@ -51,7 +51,9 @@ def run(
     audio_file_path: Optional[str] = None,
     run_id: Optional[str] = None,
     meeting_id: Optional[str] = None,
-) -> List[Decision]:
+    attendees: Optional[List[str]] = None,
+    return_transcript: bool = False,
+):
     start = time.time()
     agent_name = "TranscriptAgent"
 
@@ -62,10 +64,17 @@ def run(
     if not transcript.strip():
         _log(agent_name, "EXTRACT_DECISIONS", AuditStatus.FAILED,
              run_id, 0, "Empty transcript provided", error="No transcript or audio provided")
-        return []
+        return ([], "") if return_transcript else []
+
+    # Persist transcript for downstream views/summary context.
+    if meeting_id:
+        try:
+            update_meeting_transcript(meeting_id, transcript)
+        except Exception as e:
+            print(f"[TranscriptAgent] Failed to persist transcript: {e}")
 
     # Step 2: Extract decisions via LLM
-    decisions = _extract_decisions(transcript, run_id, meeting_id)
+    decisions = _extract_decisions(transcript, run_id, meeting_id, attendees=attendees)
 
     elapsed_ms = int((time.time() - start) * 1000)
     _log(
@@ -74,7 +83,7 @@ def run(
         f"{len(decisions)} decisions extracted",
         output={"decisions_count": len(decisions), "decisions": [d.text for d in decisions]},
     )
-    return decisions
+    return (decisions, transcript) if return_transcript else decisions
 
 
 def _transcribe_audio(audio_path: str, run_id: Optional[str]) -> str:
@@ -100,14 +109,22 @@ def _transcribe_audio(audio_path: str, run_id: Optional[str]) -> str:
         raise
 
 
-def _extract_decisions(transcript: str, run_id: Optional[str], meeting_id: Optional[str]) -> List[Decision]:
+def _extract_decisions(
+    transcript: str,
+    run_id: Optional[str],
+    meeting_id: Optional[str],
+    attendees: Optional[List[str]] = None,
+) -> List[Decision]:
     """Call Groq LLM to extract structured decisions."""
     if DEMO_MODE:
         return _demo_decisions(meeting_id, run_id)
 
+    known_names = _known_participants(transcript, attendees)
+    participants_hint = "\n".join(f"- {n}" for n in known_names) if known_names else "- Unknown"
+
     llm = ChatGroq(api_key=GROQ_API_KEY, model=GROQ_MODEL, temperature=0)
     messages = [
-        SystemMessage(content=SYSTEM_PROMPT),
+        SystemMessage(content=SYSTEM_PROMPT + "\n\nParticipant candidates:\n" + participants_hint),
         HumanMessage(content=f"TRANSCRIPT:\n\n{transcript}"),
     ]
 
@@ -126,11 +143,18 @@ def _extract_decisions(transcript: str, run_id: Optional[str], meeting_id: Optio
             items = json.loads(match.group())
             decisions = []
             for item in items:
+                text = (item.get("text") or "").strip()
+                if len(text) < 8:
+                    continue
+
+                owner = (item.get("owner") or "UNASSIGNED").strip()
+                owner = _normalize_owner(owner, known_names)
+
                 d = Decision(
                     meeting_id=meeting_id,
                     run_id=run_id,
-                    text=item.get("text", ""),
-                    owner=item.get("owner") or "UNASSIGNED",
+                    text=text,
+                    owner=owner,
                     deadline_note=item.get("deadline_note"),
                 )
                 raw_deadline = item.get("deadline")
@@ -171,6 +195,55 @@ def _demo_decisions(meeting_id: Optional[str], run_id: Optional[str]) -> List[De
                  text="Fix critical authentication bug in production", owner="Karan Patel",
                  deadline=date(2026, 3, 18)),
     ]
+
+
+def _known_participants(transcript: str, attendees: Optional[List[str]]) -> List[str]:
+    names = set()
+
+    if attendees:
+        for name in attendees:
+            cleaned = (name or "").strip()
+            if cleaned:
+                names.add(cleaned)
+
+    speaker_pattern = re.compile(r"^\s*([A-Za-z][A-Za-z .'-]{1,40})\s*:", re.MULTILINE)
+    for match in speaker_pattern.finditer(transcript or ""):
+        candidate = match.group(1).strip()
+        if len(candidate.split()) <= 5:
+            names.add(candidate)
+
+    return sorted(names)
+
+
+def _normalize_owner(owner: str, known_names: List[str]) -> str:
+    if not owner:
+        return "UNASSIGNED"
+
+    if owner.upper() == "UNASSIGNED":
+        return "UNASSIGNED"
+
+    if not known_names:
+        return owner
+
+    lower = owner.lower()
+    for name in known_names:
+        if lower == name.lower():
+            return name
+
+    owner_tokens = set(lower.split())
+    best_name = None
+    best_overlap = 0
+    for name in known_names:
+        name_tokens = set(name.lower().split())
+        overlap = len(owner_tokens & name_tokens)
+        if overlap > best_overlap:
+            best_overlap = overlap
+            best_name = name
+
+    if best_name and best_overlap > 0:
+        return best_name
+
+    return "UNASSIGNED"
 
 
 def _log(agent: str, action: str, status: AuditStatus, run_id, duration_ms: int,

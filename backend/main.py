@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from config import APP_HOST, APP_PORT, FRONTEND_URL
-from routers import meetings, tasks, dashboard, audit, escalations, pipeline, websocket
+from routers import meetings, tasks, dashboard, audit, escalations, pipeline, websocket, calendar
 from scheduler import start_scheduler
 
 # ─────────────────────────────────────────────────
@@ -51,6 +51,7 @@ app.include_router(audit.router)
 app.include_router(escalations.router)
 app.include_router(pipeline.router)
 app.include_router(websocket.router)
+app.include_router(calendar.router)
 
 # ─────────────────────────────────────────────────
 # Lifecycle

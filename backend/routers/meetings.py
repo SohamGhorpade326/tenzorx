@@ -45,6 +45,8 @@ async def process_transcript(
         transcript=req.transcript,
         meeting_title=req.title,
         meeting_id=meeting_id,
+        meeting_date=req.date,
+        attendees=req.attendees,
         run_id=run_id,
     )
 
@@ -96,6 +98,8 @@ async def process_audio(
         transcript="",
         meeting_title=title,
         meeting_id=meeting_id,
+        meeting_date=date,
+        attendees=attendees_list,
         run_id=run_id,
         audio_file_path=tmp_path,
     )
@@ -112,6 +116,8 @@ def _run_pipeline_bg(
     transcript: str,
     meeting_title: str,
     meeting_id: str,
+    meeting_date: Optional[str],
+    attendees: Optional[list],
     run_id: str,
     audio_file_path: Optional[str] = None,
 ):
@@ -121,6 +127,8 @@ def _run_pipeline_bg(
             transcript=transcript,
             meeting_title=meeting_title,
             meeting_id=meeting_id,
+            meeting_date=meeting_date,
+            attendees=attendees,
             run_id=run_id,
             audio_file_path=audio_file_path,
         )

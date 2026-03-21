@@ -10,6 +10,7 @@ import MeetingRoom from "@/pages/MeetingRoom";
 import Tasks from "@/pages/Tasks";
 import AuditTrail from "@/pages/AuditTrail";
 import Escalations from "@/pages/Escalations";
+import CalendarPage from "@/pages/CalendarPage";
 import SettingsPage from "@/pages/Settings";
 import NotFound from "./pages/NotFound.tsx";
 import ProcurementDashboard from "@/pages/procurement/ProcurementDashboard";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/audit" element={<AuditTrail />} />
             <Route path="/escalations" element={<Escalations />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             {/* Procurement Routes */}
             <Route path="/procurement" element={<ProcurementDashboard />} />

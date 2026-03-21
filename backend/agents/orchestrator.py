@@ -29,13 +29,15 @@ from models.schemas import (
 )
 from db.db import (
     insert_pipeline_run, update_pipeline_run, insert_decision,
-    insert_audit_event, get_tasks
+    insert_audit_event, get_tasks, update_meeting_summary
 )
 import agents.transcript_agent as transcript_agent
 import agents.validator_agent as validator_agent
 import agents.task_creator_agent as task_creator_agent
 import agents.tracker_agent as tracker_agent
 import agents.escalation_agent as escalation_agent
+import agents.summary_agent as summary_agent
+import agents.schedule_agent as schedule_agent
 
 
 # ─────────────────────────────────────────────────
@@ -83,12 +85,15 @@ class GraphState(BaseModel):
     run_id: str = ""
     meeting_id: str = ""
     meeting_title: str = "Untitled Meeting"
+    meeting_date: Optional[str] = None
+    attendees: List[str] = Field(default_factory=list)
     transcript: str = ""
     decisions: List[Decision] = Field(default_factory=list)
     validated_decisions: List[Decision] = Field(default_factory=list)
     review_items: List[dict] = Field(default_factory=list)
     tasks: List[Task] = Field(default_factory=list)
     escalations: List[Escalation] = Field(default_factory=list)
+    summary: str = ""
     errors: List[str] = Field(default_factory=list)
     status: str = "STARTED"
     current_step: str = ""
@@ -123,12 +128,32 @@ def signal_approval(run_id: str, approved: bool = True, modifications: dict = No
 def node_transcribe(state: GraphState) -> GraphState:
     _emit_sync(state.run_id, "TranscriptAgent", "RUNNING", "Extracting decisions and commitments...")
     try:
-        decisions = transcript_agent.run(
+        decisions, transcript_text = transcript_agent.run(
             transcript=state.transcript,
             audio_file_path=state.audio_file_path,
             run_id=state.run_id,
             meeting_id=state.meeting_id,
+            attendees=state.attendees,
+            return_transcript=True,
         )
+
+        # Extract and persist dates such as "next meeting on March 29, 2026".
+        scheduled_count = schedule_agent.save_schedule_events(
+            meeting_id=state.meeting_id,
+            transcript=transcript_text,
+            run_id=state.run_id,
+            source_title=state.meeting_title,
+        )
+        _log(
+            "TranscriptAgent",
+            "EXTRACT_SCHEDULE_EVENTS",
+            AuditStatus.SUCCESS,
+            state.run_id,
+            0,
+            f"{scheduled_count} meeting schedule event(s) extracted",
+            output={"scheduled_count": scheduled_count},
+        )
+
         # Persist decisions to DB
         for d in decisions:
             try:
@@ -138,13 +163,18 @@ def node_transcribe(state: GraphState) -> GraphState:
                 print(f"[Orchestrator] Decision insert error: {e}")
 
         new_state = state.model_copy(update={
+            "transcript": transcript_text,
             "decisions": decisions,
             "current_step": "transcribe",
             "status": "TRANSCRIBED",
         })
         _emit_sync(state.run_id, "TranscriptAgent", "SUCCESS",
                    f"{len(decisions)} decisions extracted",
-                   output={"decisions_count": len(decisions)})
+                   output={
+                       "decisions_count": len(decisions),
+                       "scheduled_meetings": scheduled_count,
+                       "owner_coverage": len([d for d in decisions if d.owner and d.owner != "UNASSIGNED"]),
+                   })
         return new_state
     except Exception as e:
         return _handle_error(state, "transcribe", str(e))
@@ -248,11 +278,20 @@ def node_escalate(state: GraphState) -> GraphState:
         all_tasks = get_tasks(status="OVERDUE")
         stalled = tracker_result.get("stalled", []) if isinstance(tracker_result, dict) else []
         overdue_and_stalled = all_tasks + stalled
+        deduped = []
+        seen = set()
+        for task in overdue_and_stalled:
+            task_id = task.get("id") if isinstance(task, dict) else None
+            key = task_id or (task.get("title"), task.get("owner"), task.get("deadline"))
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(task)
 
         escalations = []
-        if overdue_and_stalled:
+        if deduped:
             escalations = escalation_agent.run(
-                overdue_stalled_tasks=overdue_and_stalled,
+                overdue_stalled_tasks=deduped,
                 run_id=state.run_id,
             )
 
@@ -267,6 +306,49 @@ def node_escalate(state: GraphState) -> GraphState:
         return new_state
     except Exception as e:
         return _handle_error(state, "escalate", str(e))
+
+
+def node_summarize(state: GraphState) -> GraphState:
+    _emit_sync(state.run_id, "SummaryAgent", "RUNNING", "Generating meeting summary with Groq...")
+    try:
+        summary_text = summary_agent.run(
+            transcript=state.transcript,
+            meeting_title=state.meeting_title,
+            decisions=state.validated_decisions,
+            tasks=state.tasks,
+            escalations=state.escalations,
+            run_id=state.run_id,
+        )
+
+        try:
+            persisted = update_meeting_summary(state.meeting_id, summary_text)
+            if not persisted:
+                _log(
+                    "SummaryAgent",
+                    "PERSIST_SUMMARY",
+                    AuditStatus.SKIPPED,
+                    state.run_id,
+                    0,
+                    "Meeting summary column missing; summary shown in UI only",
+                )
+        except Exception as e:
+            print(f"[Orchestrator] Meeting summary persistence failed: {e}")
+
+        new_state = state.model_copy(update={
+            "summary": summary_text,
+            "current_step": "summarize",
+            "status": "COMPLETE",
+        })
+        _emit_sync(
+            state.run_id,
+            "SummaryAgent",
+            "SUCCESS",
+            "Meeting summary generated",
+            output={"summary": summary_text},
+        )
+        return new_state
+    except Exception as e:
+        return _handle_error(state, "summarize", str(e))
 
 
 def node_error_recovery(state: GraphState) -> GraphState:
@@ -324,6 +406,7 @@ def build_graph() -> StateGraph:
     graph.add_node("create_tasks", node_create_tasks)
     graph.add_node("track", node_track)
     graph.add_node("escalate", node_escalate)
+    graph.add_node("summarize", node_summarize)
     graph.add_node("error_recovery", node_error_recovery)
 
     graph.set_entry_point("transcribe")
@@ -343,13 +426,15 @@ def build_graph() -> StateGraph:
         "error_recovery": "error_recovery",
     })
     graph.add_edge("track", "escalate")
-    graph.add_edge("escalate", END)
+    graph.add_edge("escalate", "summarize")
+    graph.add_edge("summarize", END)
     graph.add_conditional_edges("error_recovery", route_error, {
         "transcribe": "transcribe",
         "validate": "validate",
         "create_tasks": "create_tasks",
         "track": "track",
         "escalate": "escalate",
+        "summarize": "summarize",
         END: END,
     })
 
@@ -374,6 +459,8 @@ def run_pipeline(
     transcript: str,
     meeting_title: str,
     meeting_id: str,
+    meeting_date: Optional[str] = None,
+    attendees: Optional[List[str]] = None,
     run_id: Optional[str] = None,
     audio_file_path: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -393,6 +480,8 @@ def run_pipeline(
         run_id=run_id,
         meeting_id=meeting_id,
         meeting_title=meeting_title,
+        meeting_date=meeting_date,
+        attendees=attendees or [],
         transcript=transcript,
         audio_file_path=audio_file_path,
         human_approved=True,  # Auto-approve by default; overridden via WS
