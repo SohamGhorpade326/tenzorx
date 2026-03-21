@@ -1,0 +1,154 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { StatusBadge } from './StatusBadge';
+import { cn } from '@/lib/utils';
+
+interface AuditEvent {
+  id: string;
+  run_id?: string;
+  agent_name: string;
+  action: string;
+  status: 'SUCCESS' | 'FAILURE' | 'RETRY' | 'INFO' | 'SKIPPED';
+  payload: Record<string, unknown>;
+  error_msg?: string;
+  created_at: string;
+}
+
+interface AuditTableProps {
+  events: AuditEvent[];
+  isLoading?: boolean;
+  showRunId?: boolean;
+  className?: string;
+}
+
+function formatTimestamp(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day} ${month} ${year}, ${hours}:${minutes}`;
+  } catch {
+    return isoString;
+  }
+}
+
+function PayloadCell({ payload, error }: { payload: Record<string, unknown>; error?: string }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-300 transition-colors"
+      >
+        <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
+        <span>View Details</span>
+      </button>
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-slate-900/50 rounded border border-slate-800 p-2"
+          >
+            <pre className="text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap">
+              {error && (
+                <div className="text-red-400 mb-2">
+                  <strong>Error:</strong> {error}
+                </div>
+              )}
+              {JSON.stringify(payload, null, 2)}
+            </pre>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export function AuditTable({
+  events,
+  isLoading = false,
+  showRunId = false,
+  className,
+}: AuditTableProps) {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-12 bg-slate-900/40 rounded animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="text-center py-8 text-slate-400">
+        <p className="text-sm">No audit events found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn('border border-slate-800 rounded-lg overflow-hidden', className)}>
+      <Table>
+        <TableHeader className="bg-slate-900/50 border-b border-slate-800">
+          <TableRow className="hover:bg-slate-900/50">
+            <TableHead className="text-slate-400 text-xs font-semibold">Time</TableHead>
+            {showRunId && <TableHead className="text-slate-400 text-xs font-semibold">Run ID</TableHead>}
+            <TableHead className="text-slate-400 text-xs font-semibold">Agent</TableHead>
+            <TableHead className="text-slate-400 text-xs font-semibold">Action</TableHead>
+            <TableHead className="text-slate-400 text-xs font-semibold">Status</TableHead>
+            <TableHead className="text-slate-400 text-xs font-semibold">Details</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {events.map((event) => (
+            <TableRow
+              key={event.id}
+              className={cn(
+                'border-b border-slate-800 hover:bg-slate-900/40 transition-colors',
+                event.status === 'SUCCESS' && 'bg-green-900/5',
+                event.status === 'FAILURE' && 'bg-red-900/5',
+                event.status === 'RETRY' && 'bg-amber-900/5'
+              )}
+            >
+              <TableCell className="text-xs text-slate-300 font-mono">
+                {formatTimestamp(event.created_at)}
+              </TableCell>
+              {showRunId && (
+                <TableCell className="text-xs text-slate-400 font-mono">
+                  {event.run_id?.substring(0, 12)}
+                </TableCell>
+              )}
+              <TableCell className="text-xs text-slate-100 font-medium">
+                {event.agent_name}
+              </TableCell>
+              <TableCell className="text-xs text-slate-300">{event.action}</TableCell>
+              <TableCell>
+                <StatusBadge status={event.status} />
+              </TableCell>
+              <TableCell className="text-xs">
+                <PayloadCell payload={event.payload} error={event.error_msg} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

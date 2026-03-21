@@ -91,4 +91,15 @@ def root():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=APP_HOST, port=APP_PORT, reload=True)
+    import sys
+    
+    # Allow port override from command line: python main.py 8001
+    port = APP_PORT
+    if len(sys.argv) > 1:
+        try:
+            port = int(sys.argv[1])
+            print(f"[Config] Using port {port} from command line argument")
+        except ValueError:
+            print(f"[Config] Invalid port argument '{sys.argv[1]}', using default {APP_PORT}")
+    
+    uvicorn.run("main:app", host=APP_HOST, port=port, reload=True)

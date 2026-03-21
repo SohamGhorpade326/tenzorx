@@ -1,0 +1,129 @@
+[
+  {
+    "vendor_id": "VEN-001",
+    "vendor_name": "TechSupply India Pvt Ltd",
+    "category_codes": [
+      "IT_HW",
+      "IT_SW"
+    ],
+    "unit_price": 82000,
+    "lead_time_days": 7,
+    "quality_rating": 4.6,
+    "is_preferred": true,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-002",
+    "vendor_name": "GlobalTech Solutions",
+    "category_codes": [
+      "IT_HW"
+    ],
+    "unit_price": 88000,
+    "lead_time_days": 5,
+    "quality_rating": 4.2,
+    "is_preferred": false,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-003",
+    "vendor_name": "Apex Office Supplies",
+    "category_codes": [
+      "FACILITIES",
+      "OFFICE"
+    ],
+    "unit_price": 5000,
+    "lead_time_days": 3,
+    "quality_rating": 4.8,
+    "is_preferred": true,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-004",
+    "vendor_name": "RawMat Distributors",
+    "category_codes": [
+      "RAW_MAT"
+    ],
+    "unit_price": 12000,
+    "lead_time_days": 14,
+    "quality_rating": 3.9,
+    "is_preferred": false,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-005",
+    "vendor_name": "CloudSoft Licenses",
+    "category_codes": [
+      "IT_SW",
+      "SERVICES"
+    ],
+    "unit_price": 45000,
+    "lead_time_days": 1,
+    "quality_rating": 4.9,
+    "is_preferred": true,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-006",
+    "vendor_name": "PrintMaster India",
+    "category_codes": [
+      "OFFICE",
+      "FACILITIES"
+    ],
+    "unit_price": 3500,
+    "lead_time_days": 2,
+    "quality_rating": 4.5,
+    "is_preferred": false,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-007",
+    "vendor_name": "InfraBuild Corp",
+    "category_codes": [
+      "FACILITIES"
+    ],
+    "unit_price": 250000,
+    "lead_time_days": 30,
+    "quality_rating": 4.1,
+    "is_preferred": false,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-008",
+    "vendor_name": "DataPro Analytics",
+    "category_codes": [
+      "SERVICES",
+      "IT_SW"
+    ],
+    "unit_price": 75000,
+    "lead_time_days": 7,
+    "quality_rating": 4.7,
+    "is_preferred": true,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-009",
+    "vendor_name": "QuickParts Mfg",
+    "category_codes": [
+      "RAW_MAT",
+      "PARTS"
+    ],
+    "unit_price": 8500,
+    "lead_time_days": 10,
+    "quality_rating": 4.3,
+    "is_preferred": false,
+    "is_approved": true
+  },
+  {
+    "vendor_id": "VEN-010",
+    "vendor_name": "SecureNet Systems",
+    "category_codes": [
+      "IT_HW",
+      "SERVICES"
+    ],
+    "unit_price": 95000,
+    "lead_time_days": 12,
+    "quality_rating": 4.0,
+    "is_preferred": false,
+    "is_approved": true
+  }
+]

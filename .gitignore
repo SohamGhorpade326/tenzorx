@@ -24,6 +24,7 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/blob-report/
 frontend/playwright/.cache/
+frontend.zip
 
 # --- Backend (Python/FastAPI) ---
 __pycache__/
@@ -48,6 +49,18 @@ backend/wheels/
 backend/share/python-wheels/
 backend/*.egg-info/
 backend/.installed.cfg
+
+# --- Procurement Backend (etgenai) ---
+etgenai/__pycache__/
+etgenai/venv/
+etgenai/.venv/
+etgenai/env/
+etgenai/.env*
+etgenai/build/
+etgenai/dist/
+etgenai/*.egg-info/
+etgenai/.installed.cfg
+procurement.db
 backend/*.egg
 backend/MANIFEST
 backend/.pytest_cache/
