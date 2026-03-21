@@ -14,10 +14,14 @@ CREATE TABLE IF NOT EXISTS meetings (
     attendees TEXT[],
     audio_path TEXT,
     transcript TEXT,
+    summary TEXT,
     status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Backfill migration for existing deployments
+ALTER TABLE meetings ADD COLUMN IF NOT EXISTS summary TEXT;
 
 -- ─────────────────────────────────────────────────
 -- PIPELINE RUNS
@@ -121,6 +125,24 @@ CREATE TABLE IF NOT EXISTS escalations (
 );
 
 -- ─────────────────────────────────────────────────
+-- MEETING SCHEDULE EVENTS
+-- ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS meeting_schedule_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    meeting_id UUID REFERENCES meetings(id) ON DELETE CASCADE,
+    run_id TEXT REFERENCES pipeline_runs(id) ON DELETE SET NULL,
+    event_date DATE NOT NULL,
+    source_text TEXT,
+    source_title TEXT,
+    decided_in_meeting_title TEXT,
+    decided_in_meeting_date DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE meeting_schedule_events ADD COLUMN IF NOT EXISTS decided_in_meeting_title TEXT;
+ALTER TABLE meeting_schedule_events ADD COLUMN IF NOT EXISTS decided_in_meeting_date DATE;
+
+-- ─────────────────────────────────────────────────
 -- INDEXES
 -- ─────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -131,6 +153,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_events_agent ON audit_events(agent);
 CREATE INDEX IF NOT EXISTS idx_audit_events_created_at ON audit_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_escalations_status ON escalations(status);
 CREATE INDEX IF NOT EXISTS idx_decisions_meeting_id ON decisions(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_schedule_event_date ON meeting_schedule_events(event_date);
+CREATE INDEX IF NOT EXISTS idx_meeting_schedule_meeting_id ON meeting_schedule_events(meeting_id);
 
 -- ─────────────────────────────────────────────────
 -- ROW LEVEL SECURITY (enable for production)
@@ -143,3 +167,4 @@ ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE task_status_history DISABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_events DISABLE ROW LEVEL SECURITY;
 ALTER TABLE escalations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE meeting_schedule_events DISABLE ROW LEVEL SECURITY;

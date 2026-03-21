@@ -30,6 +30,7 @@ const AGENT_STEP_MAP: Record<string, number> = {
   TaskCreatorAgent: 3,
   TrackerAgent: 4,
   EscalationAgent: 5,
+  SummaryAgent: 6,
   OrchestratorAgent: -1, // meta — no UI step
 };
 
@@ -44,6 +45,7 @@ export default function ProcessMeeting() {
   const [attendees, setAttendees] = useState('');
   const [runId, setRunId] = useState('');
   const [tasksCreated, setTasksCreated] = useState(0);
+  const [meetingSummary, setMeetingSummary] = useState('');
   const wsRef = useRef<WebSocket | null>(null);
   const navigate = useNavigate();
 
@@ -55,6 +57,7 @@ export default function ProcessMeeting() {
       { name: 'Task Creator Agent', icon: PlusSquare, description: 'Creating and enriching tasks...' },
       { name: 'Tracker Agent', icon: Activity, description: 'Scheduling deadline monitoring...' },
       { name: 'Escalation Agent', icon: Bell, description: 'Checking for urgent items...' },
+      { name: 'Summary Agent', icon: FileText, description: 'Generating meeting summary with Groq...' },
     ];
 
     return defs.map((def, i) => {
@@ -103,6 +106,10 @@ export default function ProcessMeeting() {
         setTasksCreated(count);
       }
 
+      if (msg.agent === 'SummaryAgent' && msg.status === 'SUCCESS') {
+        setMeetingSummary((msg.output?.summary as string) || '');
+      }
+
       // Pipeline done
       if (msg.agent === 'OrchestratorAgent' && msg.status === 'SUCCESS') {
         setProcessing(false);
@@ -135,6 +142,7 @@ export default function ProcessMeeting() {
     setCurrentStep(0);
     setStepStatuses({});
     setTasksCreated(0);
+    setMeetingSummary('');
 
     try {
       const result = await api.processTranscript({
@@ -248,6 +256,18 @@ export default function ProcessMeeting() {
               {runId && <span className="ml-2 text-xs text-muted-foreground font-mono">#{runId}</span>}
             </h3>
             <AgentStepper steps={getSteps()} onApproveAll={handleApproveAll} />
+
+            {meetingSummary && (
+              <div className="mt-5 rounded-xl border bg-muted/20 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <h4 className="text-sm font-semibold">Meeting Summary</h4>
+                </div>
+                <pre className="whitespace-pre-wrap text-xs leading-5 text-muted-foreground font-sans">
+                  {meetingSummary}
+                </pre>
+              </div>
+            )}
 
             {completed && (
               <motion.div

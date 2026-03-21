@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { AgentStepper, AgentStep } from '@/components/AgentStepper';
 import {
   Video, VideoOff, Mic, MicOff, Square, Circle,
-  Sparkles, ShieldCheck, UserCheck, PlusSquare, Activity, Bell, Users
+  Sparkles, ShieldCheck, UserCheck, PlusSquare, Activity, Bell, Users, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,7 @@ const AGENT_STEP_MAP: Record<string, number> = {
   TaskCreatorAgent: 3,
   TrackerAgent: 4,
   EscalationAgent: 5,
+  SummaryAgent: 6,
 };
 
 const STEP_DEFS = [
@@ -27,6 +28,7 @@ const STEP_DEFS = [
   { name: 'Task Creator Agent', icon: PlusSquare, description: 'Creating tasks...' },
   { name: 'Tracker Agent', icon: Activity, description: 'Monitoring deadlines...' },
   { name: 'Escalation Agent', icon: Bell, description: 'Checking urgent items...' },
+  { name: 'Summary Agent', icon: FileText, description: 'Generating meeting summary with Groq...' },
 ];
 
 export default function MeetingRoom() {
@@ -40,6 +42,7 @@ export default function MeetingRoom() {
   const [currentStep, setCurrentStep] = useState(-1);
   const [stepStatuses, setStepStatuses] = useState<Record<number, { status: string; description: string; output?: Record<string, unknown> }>>({});
   const [tasksCreated, setTasksCreated] = useState(0);
+  const [meetingSummary, setMeetingSummary] = useState('');
   const [meetingTitle, setMeetingTitle] = useState('');
   const [attendees, setAttendees] = useState('');
   const [runId, setRunId] = useState('');
@@ -138,6 +141,7 @@ export default function MeetingRoom() {
     setCurrentStep(0);
     setStepStatuses({});
     setTasksCreated(0);
+    setMeetingSummary('');
 
     const blobType = mimeTypeRef.current || 'audio/webm'; // fallback type if mimeType was empty
     const blob = new Blob(chunksRef.current, { type: blobType });
@@ -172,6 +176,9 @@ export default function MeetingRoom() {
       }
       if (msg.agent === 'TaskCreatorAgent' && msg.status === 'SUCCESS') {
         setTasksCreated((msg.output?.tasks_created as number) || 0);
+      }
+      if (msg.agent === 'SummaryAgent' && msg.status === 'SUCCESS') {
+        setMeetingSummary((msg.output?.summary as string) || '');
       }
       if (msg.agent === 'OrchestratorAgent' && msg.status === 'SUCCESS') {
         setProcessing(false);
@@ -310,10 +317,22 @@ export default function MeetingRoom() {
           >
             <h3 className="font-semibold mb-2">Processing Your Meeting</h3>
             <p className="text-xs text-muted-foreground mb-5">
-              Whisper is transcribing your audio, then all 6 agents will run automatically
+              Whisper is transcribing your audio, then all 7 agents will run automatically
               {runId && <span className="ml-2 font-mono text-muted-foreground/70">#{runId}</span>}
             </p>
             <AgentStepper steps={getSteps()} />
+
+            {meetingSummary && (
+              <div className="mt-5 rounded-xl border bg-muted/20 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <h4 className="text-sm font-semibold">Meeting Summary</h4>
+                </div>
+                <pre className="whitespace-pre-wrap text-xs leading-5 text-muted-foreground font-sans">
+                  {meetingSummary}
+                </pre>
+              </div>
+            )}
 
             {completed && (
               <motion.div
@@ -350,7 +369,7 @@ export default function MeetingRoom() {
                 <li>Have your meeting normally (audio is recorded locally)</li>
                 <li>Click "End Meeting" — audio uploads to the backend</li>
                 <li>Whisper transcribes the audio locally (no API cost)</li>
-                <li>All 6 agents run: Extract → Validate → Create Tasks → Track → Escalate</li>
+                <li>All 7 agents run: Extract → Validate → Create Tasks → Track → Escalate → Summarize</li>
                 <li>Watch the live pipeline progress in real-time</li>
               </ol>
             </div>

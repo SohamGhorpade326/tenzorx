@@ -43,6 +43,18 @@ export interface WSStepUpdate {
   timestamp: string;
 }
 
+export interface MeetingScheduleEvent {
+  id: string;
+  meeting_id: string;
+  run_id?: string | null;
+  event_date: string;
+  source_text?: string | null;
+  source_title?: string | null;
+  decided_in_meeting_title?: string | null;
+  decided_in_meeting_date?: string | null;
+  created_at: string;
+}
+
 // ─────────────────────────────────────────────────
 // Meetings
 // ─────────────────────────────────────────────────
@@ -164,6 +176,23 @@ export function getPipelineRuns() {
 
 export function approveHumanReview(runId: string) {
   return request<unknown>(`/api/pipeline/runs/${runId}/approve-review`, { method: 'POST' });
+}
+
+// ─────────────────────────────────────────────────
+// Calendar
+// ─────────────────────────────────────────────────
+
+export function getCalendarEvents(params: {
+  start_date?: string;
+  end_date?: string;
+  meeting_id?: string;
+} = {}) {
+  const qs = new URLSearchParams();
+  if (params.start_date) qs.set('start_date', params.start_date);
+  if (params.end_date) qs.set('end_date', params.end_date);
+  if (params.meeting_id) qs.set('meeting_id', params.meeting_id);
+  const query = qs.toString() ? `?${qs}` : '';
+  return request<{ events: MeetingScheduleEvent[]; count: number }>(`/api/calendar/events${query}`);
 }
 
 // ─────────────────────────────────────────────────

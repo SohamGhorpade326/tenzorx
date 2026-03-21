@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Upload, CheckSquare, ScrollText, Bell, Settings,
-  Brain, Menu, X, Sun, Moon, Video
+  Brain, Menu, X, Sun, Moon, Video, CalendarDays
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Tasks', icon: CheckSquare, path: '/tasks' },
   { label: 'Audit Trail', icon: ScrollText, path: '/audit' },
   { label: 'Escalations', icon: Bell, path: '/escalations' },
+  { label: 'Calendar', icon: CalendarDays, path: '/calendar' },
   { label: 'Settings', icon: Settings, path: '/settings' },
 ];
 
@@ -27,6 +28,7 @@ const pageTitles: Record<string, string> = {
   '/tasks': 'Tasks',
   '/audit': 'Audit Trail',
   '/escalations': 'Escalations',
+  '/calendar': 'Calendar',
   '/settings': 'Settings',
 };
 

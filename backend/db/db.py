@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 import uuid
 import time
+from fastapi.encoders import jsonable_encoder
 
 # ─────────────────────────────────────────────────
 # Supabase client (uses service key for full access)
@@ -71,12 +72,101 @@ def update_meeting_transcript(meeting_id: str, transcript: str):
     }).eq("id", meeting_id).execute()
 
 
+def update_meeting_summary(meeting_id: str, summary: str):
+    db = get_client()
+    try:
+        db.table("meetings").update({
+            "summary": summary,
+            "updated_at": _now(),
+        }).eq("id", meeting_id).execute()
+        return True
+    except Exception as e:
+        # Backward compatibility for deployments where the summary column is not migrated yet.
+        msg = str(e)
+        if "PGRST204" in msg and "summary" in msg:
+            return False
+        raise
+
+
 def update_meeting_status(meeting_id: str, status: str):
     db = get_client()
     db.table("meetings").update({
         "status": status,
         "updated_at": _now(),
     }).eq("id", meeting_id).execute()
+
+
+def get_meeting(meeting_id: str) -> Optional[dict]:
+    db = get_client()
+    res = db.table("meetings").select("*").eq("id", meeting_id).execute()
+    return res.data[0] if res.data else None
+
+
+def insert_meeting_schedule_event(
+    meeting_id: str,
+    run_id: Optional[str],
+    event_date: str,
+    source_text: str,
+    source_title: Optional[str] = None,
+    decided_in_meeting_title: Optional[str] = None,
+    decided_in_meeting_date: Optional[str] = None,
+) -> Optional[dict]:
+    db = get_client()
+    base_data = {
+        "id": _new_id(),
+        "meeting_id": meeting_id,
+        "run_id": run_id,
+        "event_date": event_date,
+        "source_text": source_text,
+        "source_title": source_title,
+        "created_at": _now(),
+    }
+    data = {
+        **base_data,
+        "decided_in_meeting_title": decided_in_meeting_title,
+        "decided_in_meeting_date": decided_in_meeting_date,
+    }
+    try:
+        res = db.table("meeting_schedule_events").insert(data).execute()
+        return res.data[0] if res.data else None
+    except Exception as e:
+        # Backward compatibility for deployments where recent columns are not migrated yet.
+        msg = str(e)
+        if "meeting_schedule_events" in msg and "decided_in_meeting_" in msg:
+            try:
+                res = db.table("meeting_schedule_events").insert(base_data).execute()
+                return res.data[0] if res.data else None
+            except Exception:
+                return None
+        if "meeting_schedule_events" in msg or "PGRST204" in msg:
+            # If the table itself is missing or schema is older, do not break pipeline.
+            return None
+        raise
+
+
+def get_meeting_schedule_events(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    meeting_id: Optional[str] = None,
+    limit: int = 500,
+) -> List[dict]:
+    db = get_client()
+    query = db.table("meeting_schedule_events").select("*").order("event_date", desc=False).limit(limit)
+    if start_date:
+        query = query.gte("event_date", start_date)
+    if end_date:
+        query = query.lte("event_date", end_date)
+    if meeting_id:
+        query = query.eq("meeting_id", meeting_id)
+
+    try:
+        res = query.execute()
+        return res.data
+    except Exception as e:
+        msg = str(e)
+        if "meeting_schedule_events" in msg or "PGRST204" in msg:
+            return []
+        raise
 
 
 # ─────────────────────────────────────────────────
@@ -250,8 +340,8 @@ def insert_audit_event(event: AuditEvent) -> dict:
         "status": event.status.value if event.status else "SUCCESS",
         "duration_ms": event.duration_ms,
         "summary": event.summary,
-        "input_payload": event.input_payload,
-        "output_payload": event.output_payload,
+        "input_payload": jsonable_encoder(event.input_payload) if event.input_payload is not None else None,
+        "output_payload": jsonable_encoder(event.output_payload) if event.output_payload is not None else None,
         "error_message": event.error_message,
         "retry_count": event.retry_count,
         "created_at": event.created_at.isoformat() if event.created_at else _now(),
