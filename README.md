@@ -52,7 +52,7 @@ Data persistence + audit trail
 
 #### Supabase Database Schema
 1. In your Supabase project, go to **SQL Editor**
-2. Copy and paste the contents of `backend/db/schema.sql`
+2. Copy and paste the contents of `microservices/meetingworkflow/db/schema.sql`
 3. Click **Run** — this creates all tables
 
 ---
@@ -61,7 +61,7 @@ Data persistence + audit trail
 
 ```bash
 # Navigate to backend directory
-cd meetingmind/backend
+cd meetingmind/microservices/meetingworkflow
 
 # Create a virtual environment
 python3 -m venv venv
@@ -128,7 +128,7 @@ Open **two terminals**:
 
 **Terminal 1 — Backend:**
 ```bash
-cd meetingmind/backend
+cd meetingmind/microservices/meetingworkflow
 source venv/bin/activate
 uvicorn main:app --reload --port 8000
 ```
@@ -160,9 +160,9 @@ Then open [http://localhost:5173](http://localhost:5173)
 4. Watch the real-time agent pipeline execute via WebSocket
 
 ### Sample transcripts are at:
-- `backend/data/sample_transcript_1.txt` — Q3 Planning Meeting
-- `backend/data/sample_transcript_2.txt` — Sprint Retrospective
-- `backend/data/sample_transcript_3.txt` — Client Sync Call
+- `microservices/meetingworkflow/data/sample_transcript_1.txt` — Q3 Planning Meeting
+- `microservices/meetingworkflow/data/sample_transcript_2.txt` — Sprint Retrospective
+- `microservices/meetingworkflow/data/sample_transcript_3.txt` — Client Sync Call
 
 ---
 
@@ -183,46 +183,47 @@ Then open [http://localhost:5173](http://localhost:5173)
 
 ```
 meetingmind/
-├── backend/
-│   ├── agents/
-│   │   ├── transcript_agent.py   ← Whisper + Groq
-│   │   ├── validator_agent.py    ← Rules + LLM validation
-│   │   ├── orchestrator.py       ← LangGraph StateGraph
-│   │   ├── task_creator_agent.py ← Task creation + enrichment
-│   │   ├── tracker_agent.py      ← Deadline monitoring
-│   │   └── escalation_agent.py   ← AI-written escalations
-│   ├── db/
-│   │   ├── schema.sql            ← Run in Supabase SQL editor
-│   │   └── db.py                 ← All CRUD helpers
-│   ├── models/
-│   │   └── schemas.py            ← Pydantic models
-│   ├── routers/
-│   │   ├── meetings.py           ← POST /api/meetings/*
-│   │   ├── tasks.py              ← GET/PATCH /api/tasks
-│   │   ├── dashboard.py          ← GET /api/dashboard
-│   │   ├── audit.py              ← GET /api/audit-events
-│   │   ├── escalations.py        ← GET/POST /api/escalations
-│   │   ├── pipeline.py           ← GET /api/pipeline/runs
-│   │   └── websocket.py          ← WS /api/ws/pipeline/{run_id}
-│   ├── data/
-│   │   └── sample_transcript_*.txt
-│   ├── main.py                   ← FastAPI app + CORS + startup
-│   ├── scheduler.py              ← APScheduler (tracker every 5 min)
-│   ├── config.py                 ← Env vars
-│   ├── requirements.txt
-│   └── .env.example
-└── frontend/
-    ├── src/
-    │   ├── lib/api.ts            ← All API calls + WebSocket helper
-    │   ├── pages/
-    │   │   ├── MeetingRoom.tsx   ← WebRTC + MediaRecorder + pipeline
-    │   │   ├── ProcessMeeting.tsx
-    │   │   ├── Dashboard.tsx
-    │   │   ├── Tasks.tsx
-    │   │   ├── AuditTrail.tsx
-    │   │   └── Escalations.tsx
-    │   └── ...
-    └── .env                      ← VITE_API_URL=http://localhost:8000
+├── microservices/
+│   └── meetingworkflow/
+│       ├── agents/
+│       │   ├── transcript_agent.py   ← Whisper + Groq
+│       │   ├── validator_agent.py    ← Rules + LLM validation
+│       │   ├── orchestrator.py       ← LangGraph StateGraph
+│       │   ├── task_creator_agent.py ← Task creation + enrichment
+│       │   ├── tracker_agent.py      ← Deadline monitoring
+│       │   └── escalation_agent.py   ← AI-written escalations
+│       ├── db/
+│       │   ├── schema.sql            ← Run in Supabase SQL editor
+│       │   └── db.py                 ← All CRUD helpers
+│       ├── models/
+│       │   └── schemas.py            ← Pydantic models
+│       ├── routers/
+│       │   ├── meetings.py           ← POST /api/meetings/*
+│       │   ├── tasks.py              ← GET/PATCH /api/tasks
+│       │   ├── dashboard.py          ← GET /api/dashboard
+│       │   ├── audit.py              ← GET /api/audit-events
+│       │   ├── escalations.py        ← GET/POST /api/escalations
+│       │   ├── pipeline.py           ← GET /api/pipeline/runs
+│       │   └── websocket.py          ← WS /api/ws/pipeline/{run_id}
+│       ├── data/
+│       │   └── sample_transcript_*.txt
+│       ├── main.py                   ← FastAPI app + CORS + startup
+│       ├── scheduler.py              ← APScheduler (tracker every 5 min)
+│       ├── config.py                 ← Env vars
+│       ├── requirements.txt
+│       └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── lib/api.ts            ← All API calls + WebSocket helper
+│   │   ├── pages/
+│   │   │   ├── MeetingRoom.tsx   ← WebRTC + MediaRecorder + pipeline
+│   │   │   ├── ProcessMeeting.tsx
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Tasks.tsx
+│   │   │   ├── AuditTrail.tsx
+│   │   │   └── Escalations.tsx
+│   │   └── ...
+│   └── .env                      ← VITE_API_URL=http://localhost:8000
 ```
 
 ---

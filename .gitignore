@@ -29,70 +29,70 @@ frontend.zip
 # --- Backend (Python/FastAPI) ---
 __pycache__/
 *.py[cod]
-backend/__pycache__/
-backend/venv/
-backend/.venv/
-backend/env/
-backend/.env/
-backend/build/
-backend/develop-eggs/
-backend/dist/
-backend/downloads/
-backend/eggs/
-backend/.eggs/
-backend/lib/
-backend/lib64/
-backend/parts/
-backend/sdist/
-backend/var/
-backend/wheels/
-backend/share/python-wheels/
-backend/*.egg-info/
-backend/.installed.cfg
+microservices/meetingworkflow/__pycache__/
+microservices/meetingworkflow/venv/
+microservices/meetingworkflow/.venv/
+microservices/meetingworkflow/env/
+microservices/meetingworkflow/.env/
+microservices/meetingworkflow/build/
+microservices/meetingworkflow/develop-eggs/
+microservices/meetingworkflow/dist/
+microservices/meetingworkflow/downloads/
+microservices/meetingworkflow/eggs/
+microservices/meetingworkflow/.eggs/
+microservices/meetingworkflow/lib/
+microservices/meetingworkflow/lib64/
+microservices/meetingworkflow/parts/
+microservices/meetingworkflow/sdist/
+microservices/meetingworkflow/var/
+microservices/meetingworkflow/wheels/
+microservices/meetingworkflow/share/python-wheels/
+microservices/meetingworkflow/*.egg-info/
+microservices/meetingworkflow/.installed.cfg
 
 # --- Procurement Backend (etgenai) ---
-etgenai/__pycache__/
-etgenai/venv/
-etgenai/.venv/
-etgenai/env/
-etgenai/.env*
-etgenai/build/
-etgenai/dist/
-etgenai/*.egg-info/
-etgenai/.installed.cfg
-etgenai/procurement.db
+microservices/procurementworkflow/__pycache__/
+microservices/procurementworkflow/venv/
+microservices/procurementworkflow/.venv/
+microservices/procurementworkflow/env/
+microservices/procurementworkflow/.env*
+microservices/procurementworkflow/build/
+microservices/procurementworkflow/dist/
+microservices/procurementworkflow/*.egg-info/
+microservices/procurementworkflow/.installed.cfg
+microservices/procurementworkflow/procurement.db
 
 # --- Onboarding System ---
-onboarding_system/__pycache__/
-onboarding_system/venv/
-onboarding_system/.venv/
-onboarding_system/env/
-onboarding_system/.env*
-onboarding_system/*.egg-info/
-onboarding_system/onboarding.db*
+microservices/onboardingworkflow/__pycache__/
+microservices/onboardingworkflow/venv/
+microservices/onboardingworkflow/.venv/
+microservices/onboardingworkflow/env/
+microservices/onboardingworkflow/.env*
+microservices/onboardingworkflow/*.egg-info/
+microservices/onboardingworkflow/onboarding.db*
 
 # --- Contract Workflow ---
-contract_workflow/__pycache__/
-contract_workflow/venv/
-contract_workflow/.venv/
-contract_workflow/env/
-contract_workflow/.env*
-contract_workflow/*.egg-info/
-contract_workflow/contracts.db*
+microservices/contract-workflow/__pycache__/
+microservices/contract-workflow/venv/
+microservices/contract-workflow/.venv/
+microservices/contract-workflow/env/
+microservices/contract-workflow/.env*
+microservices/contract-workflow/*.egg-info/
+microservices/contract-workflow/contracts.db*
 
 procurement.db
-backend/*.egg
-backend/MANIFEST
-backend/.pytest_cache/
-backend/.mypy_cache/
-backend/.tox/
-backend/.nox/
-backend/.coverage
-backend/htmlcov/
-backend/nosetests.xml
-backend/coverage.xml
-backend/*.pyc
-backend/*.pyo
+microservices/meetingworkflow/*.egg
+microservices/meetingworkflow/MANIFEST
+microservices/meetingworkflow/.pytest_cache/
+microservices/meetingworkflow/.mypy_cache/
+microservices/meetingworkflow/.tox/
+microservices/meetingworkflow/.nox/
+microservices/meetingworkflow/.coverage
+microservices/meetingworkflow/htmlcov/
+microservices/meetingworkflow/nosetests.xml
+microservices/meetingworkflow/coverage.xml
+microservices/meetingworkflow/*.pyc
+microservices/meetingworkflow/*.pyo
 
 # --- Environment Secrets ---
 .env
@@ -102,8 +102,8 @@ backend/*.pyo
 .env.production.local
 frontend/.env
 frontend/.env.local
-backend/.env
-backend/.env.local
+microservices/meetingworkflow/.env
+microservices/meetingworkflow/.env.local
 
 # --- Project Specific Data ---
 # Video and Audio recordings
@@ -114,11 +114,11 @@ backend/.env.local
 *.mp3
 
 # Backend Data Exports and Local DBs
-backend/data/github_exports/*.json
-backend/db/*.sqlite3
-backend/db/*.db
+microservices/meetingworkflow/data/github_exports/*.json
+microservices/meetingworkflow/db/*.sqlite3
+microservices/meetingworkflow/db/*.db
 # Keep sample files, but ignore other additions if needed
-# backend/data/sample_*.txt
+# microservices/meetingworkflow/data/sample_*.txt
 
 # Ignore specific large files or uploads if they end up here
 /uploads/
