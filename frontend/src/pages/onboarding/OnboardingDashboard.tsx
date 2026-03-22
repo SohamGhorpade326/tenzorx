@@ -26,21 +26,21 @@ interface MetricCardProps {
 
 function MetricCard({ title, value, icon, color }: MetricCardProps) {
   const colorClasses = {
-    green: 'bg-green-900/20 border-green-700 text-green-500',
-    blue: 'bg-blue-900/20 border-blue-700 text-blue-500',
-    red: 'bg-red-900/20 border-red-700 text-red-500',
-    amber: 'bg-amber-900/20 border-amber-700 text-amber-500',
+    green: 'text-green-500',
+    blue: 'text-primary',
+    red: 'text-destructive',
+    amber: 'text-warning',
   };
 
   return (
-    <Card className={`border ${colorClasses[color]}`}>
-      <CardContent className="p-6">
+    <Card className="rounded-2xl border bg-card">
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-slate-400 font-medium">{title}</div>
-            <div className="text-3xl font-bold text-slate-100 mt-2">{value}</div>
+            <div className="text-sm text-muted-foreground font-medium">{title}</div>
+            <div className="text-3xl font-bold mt-2">{value}</div>
           </div>
-          <div className="opacity-60">{icon}</div>
+          <div className={`opacity-60 ${colorClasses[color]}`}>{icon}</div>
         </div>
       </CardContent>
     </Card>
@@ -108,12 +108,12 @@ export default function OnboardingDashboard() {
     >
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">Onboarding Dashboard</h1>
-          <p className="text-slate-400 mt-1">Overview of all new hire onboarding runs</p>
+          <h1 className="text-2xl font-bold">Onboarding Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Overview of all new hire onboarding runs</p>
         </div>
         <Button
           onClick={() => navigate('/onboarding/new')}
-          className="gap-2 bg-blue-700 hover:bg-blue-600"
+          className="gap-2 rounded-xl"
         >
           <Plus className="w-4 h-4" />
           New Hire Onboarding
@@ -127,69 +127,65 @@ export default function OnboardingDashboard() {
         <MetricCard title="Running" value={stats.pending} icon={<Clock className="w-8 h-8" />} color="amber" />
       </div>
 
-      <Card className="border-slate-800 bg-slate-950">
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Runs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 bg-slate-900/40" />
-              ))}
-            </div>
-          ) : runs.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
-              <p className="text-sm">No runs found. Start a new hire onboarding process.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-slate-900/50">
-                  <TableRow className="border-slate-800 hover:bg-slate-900/50">
-                    <TableHead className="text-slate-400 text-xs font-semibold">Run ID</TableHead>
-                    <TableHead className="text-slate-400 text-xs font-semibold">Status</TableHead>
-                    <TableHead className="text-slate-400 text-xs font-semibold">Started</TableHead>
-                    <TableHead className="text-slate-400 text-xs font-semibold">Completed</TableHead>
-                    <TableHead className="text-slate-400 text-xs font-semibold">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {runs.map((run) => (
-                    <TableRow
-                      key={run.run_id}
-                      className="border-slate-800 hover:bg-slate-900/40 transition-colors"
-                    >
-                      <TableCell className="text-xs text-slate-100 font-mono">
-                        {run.run_id}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={run.status} />
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-400">
-                        {formatTimestamp(run.started_at)}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-400">
-                        {run.completed_at ? formatTimestamp(run.completed_at) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/onboarding/run/${run.run_id}`)}
-                          className="text-blue-400 hover:text-blue-300 text-xs"
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="bg-card rounded-2xl border p-5">
+        <h3 className="font-semibold mb-4">Recent Runs</h3>
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-12" />
+            ))}
+          </div>
+        ) : runs.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">No runs found. Start a new hire onboarding process.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground border-b">
+                  <th className="pb-3 font-medium">Run ID</th>
+                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 font-medium">Started</th>
+                  <th className="pb-3 font-medium">Completed</th>
+                  <th className="pb-3 font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((run) => (
+                  <tr
+                    key={run.run_id}
+                    className="border-b border-border/50 hover:bg-muted/50 transition-colors"
+                  >
+                    <td className="py-3 font-mono text-xs text-muted-foreground">
+                      {run.run_id}
+                    </td>
+                    <td className="py-3">
+                      <StatusBadge status={run.status} />
+                    </td>
+                    <td className="py-3 text-muted-foreground text-xs">
+                      {formatTimestamp(run.started_at)}
+                    </td>
+                    <td className="py-3 text-muted-foreground text-xs">
+                      {run.completed_at ? formatTimestamp(run.completed_at) : '—'}
+                    </td>
+                    <td className="py-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/onboarding/run/${run.run_id}`)}
+                        className="text-xs rounded-xl text-muted-foreground"
+                      >
+                        View
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
