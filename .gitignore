@@ -60,6 +60,26 @@ etgenai/build/
 etgenai/dist/
 etgenai/*.egg-info/
 etgenai/.installed.cfg
+etgenai/procurement.db
+
+# --- Onboarding System ---
+onboarding_system/__pycache__/
+onboarding_system/venv/
+onboarding_system/.venv/
+onboarding_system/env/
+onboarding_system/.env*
+onboarding_system/*.egg-info/
+onboarding_system/onboarding.db*
+
+# --- Contract Workflow ---
+contract_workflow/__pycache__/
+contract_workflow/venv/
+contract_workflow/.venv/
+contract_workflow/env/
+contract_workflow/.env*
+contract_workflow/*.egg-info/
+contract_workflow/contracts.db*
+
 procurement.db
 backend/*.egg
 backend/MANIFEST
