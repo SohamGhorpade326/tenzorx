@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Upload, CheckSquare, ScrollText, Bell, Settings,
-  Brain, Menu, X, Sun, Moon, Video, Package, Clock, BarChart3, Building2, CalendarDays
+  Brain, Menu, X, Sun, Moon, Video, Package, Clock, BarChart3, Building2, CalendarDays, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -27,6 +27,16 @@ const navItems = [
   { label: 'Vendors', icon: Building2, path: '/procurement/vendors' },
   { label: 'Review Queue', icon: Clock, path: '/procurement/reviews' },
   { label: 'Audit Log', icon: ScrollText, path: '/procurement/audit' },
+  // Onboarding section
+  { label: 'Onboarding', icon: CheckSquare, path: '/onboarding', section: true },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/onboarding' },
+  { label: 'New Hire', icon: Upload, path: '/onboarding/new' },
+  { label: 'Analytics', icon: BarChart3, path: '/onboarding/analytics' },
+  // Contract workflow section
+  { label: 'Contract Workflow', icon: FileText, path: '/contracts', section: true },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/contracts' },
+  { label: 'New Contract Run', icon: Upload, path: '/contracts/new' },
+  { label: 'Analytics', icon: BarChart3, path: '/contracts/analytics' },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -44,7 +54,33 @@ const pageTitles: Record<string, string> = {
   '/procurement/vendors': 'Vendor Intelligence',
   '/procurement/reviews': 'Review Queue',
   '/procurement/audit': 'Audit Log',
+  '/onboarding': 'Onboarding Dashboard',
+  '/onboarding/new': 'New Hire Onboarding',
+  '/onboarding/analytics': 'Onboarding Analytics Summary',
+  '/contracts': 'Contract Workflow Dashboard',
+  '/contracts/new': 'New Contract Workflow Run',
+  '/contracts/analytics': 'Contract Analytics Summary',
 };
+
+function getPageTitle(pathname: string): string {
+  if (pageTitles[pathname]) {
+    return pageTitles[pathname];
+  }
+
+  if (pathname.startsWith('/procurement/run/')) {
+    return 'Procurement Run Details';
+  }
+
+  if (pathname.startsWith('/onboarding/run/')) {
+    return 'Onboarding Run Details';
+  }
+
+  if (pathname.startsWith('/contracts/run/')) {
+    return 'Contract Run Details';
+  }
+
+  return 'MeetingMind';
+}
 
 export default function AppLayout() {
   const [dark, setDark] = useState(false);
@@ -156,7 +192,7 @@ export default function AppLayout() {
               <Menu className="w-5 h-5" />
             </button>
 
-            <h1 className="text-lg font-semibold">{pageTitles[location.pathname] || 'MeetingMind'}</h1>
+            <h1 className="text-lg font-semibold">{getPageTitle(location.pathname)}</h1>
 
             <div className="ml-auto flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">

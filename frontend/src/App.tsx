@@ -20,6 +20,14 @@ import ProcurementReviews from "@/pages/procurement/ProcurementReviews";
 import ProcurementAuditLog from "@/pages/procurement/ProcurementAuditLog";
 import AnalyticsDashboard from "@/pages/procurement/AnalyticsDashboard";
 import VendorIntelligence from "@/pages/procurement/VendorIntelligence";
+import OnboardingDashboard from "@/pages/onboarding/OnboardingDashboard";
+import NewOnboardingRequest from "@/pages/onboarding/NewOnboardingRequest";
+import OnboardingRunDetail from "@/pages/onboarding/OnboardingRunDetail";
+import OnboardingAnalytics from "@/pages/onboarding/OnboardingAnalytics";
+import ContractDashboard from "@/pages/contract/ContractDashboard";
+import NewContractRequest from "@/pages/contract/NewContractRequest";
+import ContractRunDetail from "@/pages/contract/ContractRunDetail";
+import ContractAnalytics from "@/pages/contract/ContractAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +55,16 @@ const App = () => (
             <Route path="/procurement/audit" element={<ProcurementAuditLog />} />
             <Route path="/procurement/analytics" element={<AnalyticsDashboard />} />
             <Route path="/procurement/vendors" element={<VendorIntelligence />} />
+            {/* Onboarding Routes */}
+            <Route path="/onboarding" element={<OnboardingDashboard />} />
+            <Route path="/onboarding/new" element={<NewOnboardingRequest />} />
+            <Route path="/onboarding/run/:runId" element={<OnboardingRunDetail />} />
+            <Route path="/onboarding/analytics" element={<OnboardingAnalytics />} />
+            {/* Contract Workflow Routes */}
+            <Route path="/contracts" element={<ContractDashboard />} />
+            <Route path="/contracts/new" element={<NewContractRequest />} />
+            <Route path="/contracts/run/:runId" element={<ContractRunDetail />} />
+            <Route path="/contracts/analytics" element={<ContractAnalytics />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
