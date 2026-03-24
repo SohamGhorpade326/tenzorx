@@ -12,7 +12,7 @@ export const useTheme = () => useContext(ThemeContext);
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-  { label: 'Meeting Room', icon: Video, path: '/meeting', primary: true },
+  { label: 'New Meeting', icon: Video, path: '/meeting', primary: true },
   { label: 'Process Meeting', icon: Upload, path: '/process' },
   { label: 'Tasks', icon: CheckSquare, path: '/tasks' },
   { label: 'Audit Trail', icon: ScrollText, path: '/audit' },
@@ -41,7 +41,7 @@ const navItems = [
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
-  '/meeting': 'Meeting Room',
+  '/meeting': 'New Meeting',
   '/process': 'Process Meeting',
   '/tasks': 'Tasks',
   '/audit': 'Audit Trail',
