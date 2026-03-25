@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,7 +9,8 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL    = os.getenv("OLLAMA_MODEL", "mistral")  # mistral 7b
 
 # ── Database ─────────────────────────────────────────────────────
-DB_PATH = os.getenv("DB_PATH", "procurement.db")
+_SERVICE_DIR = Path(__file__).resolve().parent
+DB_PATH = os.getenv("DB_PATH", str(_SERVICE_DIR / "procurement.db"))
 
 # ── Business rules ───────────────────────────────────────────────
 APPROVAL_THRESHOLD        = int(os.getenv("APPROVAL_THRESHOLD", 500000))      # INR
