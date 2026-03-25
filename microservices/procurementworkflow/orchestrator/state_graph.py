@@ -132,13 +132,34 @@ def node_po_creation(state: GraphState) -> GraphState:
 
     try:
         print(f"[PO-CREATION] Starting PO creation for PR {proc_state.pr.pr_id if proc_state.pr else 'unknown'}")
+
+        # Guardrails: PO creation requires both PR and vendor selection.
+        if not proc_state.pr:
+            raise AgentException("Missing purchase request state; cannot create PO")
+
+        if not proc_state.vendor:
+            # Route back to human review instead of crashing with NoneType.
+            review_id = enqueue_for_review(
+                run_id=run_id,
+                agent_name="VendorSelectionAgent",
+                reason="Vendor selection missing; cannot proceed to PO creation",
+                payload={"pr": proc_state.pr},
+            )
+            proc_state.human_review_ids.append(review_id)
+            proc_state.errors.append("Vendor selection missing for PO creation")
+            proc_state.current_step = "pending_vendor_review"
+            proc_state.status = RunStatus.PARTIAL
+            return {**state, "proc_state": proc_state.model_dump()}
         
         agent = POCreationAgent(run_id)
         # Convert Pydantic models to dicts before passing to agent
         pr_dict = proc_state.pr.model_dump() if hasattr(proc_state.pr, 'model_dump') else proc_state.pr
         vendor_dict = proc_state.vendor.model_dump() if hasattr(proc_state.vendor, 'model_dump') else proc_state.vendor
         
-        print(f"[PO-CREATION] Calling agent.run() with pr_id={pr_dict.get('pr_id')}, vendor={vendor_dict.get('vendor_name')}")
+        print(
+            f"[PO-CREATION] Calling agent.run() with pr_id={pr_dict.get('pr_id')}, "
+            f"vendor={vendor_dict.get('vendor_name')}"
+        )
         po = agent.run(pr=pr_dict, vendor=vendor_dict)
         
         print(f"[PO-CREATION] Agent completed, PO ID={po.get('po_id') if isinstance(po, dict) else 'unknown'}")
@@ -440,13 +461,24 @@ class ProcurementOrchestrator:
                     return proc_state.model_dump()
 
             elif proc_state.current_step == "pending_vendor_review":
-                print(f"[AUTO-RESUME] Resuming from vendor review → PO creation")
-                # Vendor selection was approved, continue to PO creation
-                proc_state.current_step = "po_creation"
+                print(f"[AUTO-RESUME] Resuming from vendor review → vendor selection")
+                # Approval doesn't inject vendor data; re-run vendor selection.
+                proc_state.current_step = "vendor_selection"
                 proc_state.status = RunStatus.RUNNING  # ← RESET STATUS!
                 graph_state["proc_state"] = proc_state.model_dump()
-                
-                print(f"[AUTO-RESUME] Calling node_po_creation...")
+
+                print(f"[AUTO-RESUME] Calling node_vendor_selection...")
+                graph_state = node_vendor_selection(graph_state)
+                proc = ProcurementState.model_validate(graph_state["proc_state"])
+                print(f"[AUTO-RESUME] After vendor selection: status={proc.status}, step={proc.current_step}")
+                update_run(run_id, proc)
+
+                # If still pending vendor review (e.g., no vendors), stop here.
+                if proc.current_step == "pending_vendor_review":
+                    print(f"[AUTO-RESUME] ⚠️  Vendor review still needed - STOPPING")
+                    return proc.model_dump()
+
+                print(f"[AUTO-RESUME] Vendor selected successfully, moving to PO creation")
                 graph_state = node_po_creation(graph_state)
                 proc = ProcurementState.model_validate(graph_state["proc_state"])
                 print(f"[AUTO-RESUME] After PO creation: status={proc.status}, step={proc.current_step}")

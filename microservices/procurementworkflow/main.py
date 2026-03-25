@@ -11,6 +11,7 @@ import os
 import sys
 import logging
 from time import time
+import sqlite3
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.dirname(__file__))
 
 from config import API_HOST, API_PORT
+from config import DB_PATH
 from db.db import init_db
 from db.seed_data import seed
 from api.routes import router
@@ -79,10 +81,19 @@ async def on_startup():
     print("[Startup] Initialising database...")
     init_db()
 
+    def db_has_vendors() -> bool:
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            row = conn.execute("SELECT COUNT(*) FROM vendors").fetchone()
+            conn.close()
+            return bool(row and row[0] and int(row[0]) > 0)
+        except Exception:
+            return False
+
     # Seed mock data only if files don't exist yet
     mock_dir = os.path.join(os.path.dirname(__file__), "mock_data")
     vendors_file = os.path.join(mock_dir, "vendors.json")
-    if not os.path.exists(vendors_file):
+    if (not os.path.exists(vendors_file)) or (not db_has_vendors()):
         print("[Startup] Seeding mock data...")
         seed()
     else:
