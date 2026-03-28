@@ -7,15 +7,34 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false);
   const [pollingInterval, setPollingInterval] = useState([15]);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="max-w-3xl mx-auto space-y-6"
+    >
       {/* LLM Configuration */}
-      <div className="bg-card rounded-2xl border p-6 space-y-5">
+      <motion.div variants={itemVariants} className="bg-card rounded-2xl border p-6 space-y-5">
         <h3 className="font-semibold text-lg">LLM Configuration</h3>
 
         <div className="space-y-3">
@@ -53,10 +72,10 @@ export default function SettingsPage() {
           <Switch id="fallback" />
           <Label htmlFor="fallback" className="text-sm">Enable fallback LLM</Label>
         </div>
-      </div>
+      </motion.div>
 
       {/* Workflow Settings */}
-      <div className="bg-card rounded-2xl border p-6 space-y-5">
+      <motion.div variants={itemVariants} className="bg-card rounded-2xl border p-6 space-y-5">
         <h3 className="font-semibold text-lg">Workflow Settings</h3>
 
         <div className="space-y-3">
@@ -84,10 +103,10 @@ export default function SettingsPage() {
           <Label className="text-sm">Escalation delay (hours)</Label>
           <Input type="number" defaultValue={24} className="rounded-xl w-32" />
         </div>
-      </div>
+      </motion.div>
 
       {/* Notifications */}
-      <div className="bg-card rounded-2xl border p-6 space-y-5">
+      <motion.div variants={itemVariants} className="bg-card rounded-2xl border p-6 space-y-5">
         <h3 className="font-semibold text-lg">Notifications</h3>
 
         <div className="flex items-center gap-3">
@@ -124,7 +143,7 @@ export default function SettingsPage() {
             ))}
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

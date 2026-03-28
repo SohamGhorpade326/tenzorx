@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, addDays, parseISO } from 'date-fns';
 import { CalendarDays, ExternalLink, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -36,8 +37,26 @@ export default function CalendarPage() {
     return Array.from(eventsByDate.keys()).map((dateStr) => parseISO(dateStr));
   }, [eventsByDate]);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
@@ -77,37 +96,45 @@ export default function CalendarPage() {
             </div>
 
             {selectedEvents.length === 0 ? (
-              <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground"
+              >
                 No meeting is scheduled on this date.
-              </div>
+              </motion.div>
             ) : (
-              <div className="space-y-3">
-                {selectedEvents.map((event) => (
-                  <Card key={event.id} className="border">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold">
-                        {event.source_title || 'Meeting'}
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Decided in: {event.decided_in_meeting_title || event.source_title || 'Unknown meeting'}
-                        {event.decided_in_meeting_date ? ` on ${format(parseISO(event.decided_in_meeting_date), 'dd MMM yyyy')}` : ''}
-                      </CardDescription>
-                      <CardDescription className="text-xs">{event.source_text || 'Scheduled from transcript'}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <a
-                        href={buildGoogleCalendarUrl(event)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-                      >
-                        Add to Google Calendar
-                        <ExternalLink className="ml-1 h-3.5 w-3.5" />
-                      </a>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-3">
+                <AnimatePresence>
+                  {selectedEvents.map((event) => (
+                    <motion.div key={event.id} variants={itemVariants} layout exit={{ opacity: 0, scale: 0.95 }}>
+                      <Card className="border shadow-sm hover:shadow-md transition-shadow">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-semibold">
+                            {event.source_title || 'Meeting'}
+                          </CardTitle>
+                          <CardDescription className="text-xs">
+                            Decided in: {event.decided_in_meeting_title || event.source_title || 'Unknown meeting'}
+                            {event.decided_in_meeting_date ? ` on ${format(parseISO(event.decided_in_meeting_date), 'dd MMM yyyy')}` : ''}
+                          </CardDescription>
+                          <CardDescription className="text-xs">{event.source_text || 'Scheduled from transcript'}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <a
+                            href={buildGoogleCalendarUrl(event)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center text-sm font-medium text-primary hover:underline"
+                          >
+                            Add to Google Calendar
+                            <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                          </a>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             )}
 
             <div className="rounded-xl border bg-muted/20 p-4 text-xs text-muted-foreground">
@@ -117,7 +144,7 @@ export default function CalendarPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
   );
 }
 

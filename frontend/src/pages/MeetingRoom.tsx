@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Video, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as api from '@/lib/api';
 
 export default function MeetingRoom() {
@@ -132,7 +133,11 @@ export default function MeetingRoom() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-5xl mx-auto space-y-6"
+    >
       <div className="bg-card rounded-2xl border p-6">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -146,60 +151,105 @@ export default function MeetingRoom() {
           </div>
         </div>
 
-        {!isRecording && (
-          <Button
-            onClick={startMeeting}
-            disabled={isUploading}
-            className="mt-4 h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <Video className="w-4 h-4 mr-2" />
-            Start Meeting
-          </Button>
-        )}
-
-        {isRecording && (
-          <Button
-            onClick={endMeetingAndProcess}
-            disabled={isUploading}
-            className="mt-4 h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white"
-          >
-            {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Square className="w-4 h-4 mr-2 fill-white" />}
-            End Meeting & Process
-          </Button>
-        )}
+        <AnimatePresence mode="wait">
+          {!isRecording ? (
+            <motion.div
+              key="start"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                onClick={startMeeting}
+                disabled={isUploading}
+                className="mt-4 h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <Video className="w-4 h-4 mr-2" />
+                Start Meeting
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="end"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                onClick={endMeetingAndProcess}
+                disabled={isUploading}
+                className="mt-4 h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white relative overflow-hidden group"
+              >
+                {/* Pulse recording effect */}
+                <motion.div 
+                  initial={{ opacity: 0.5, scale: 1 }}
+                  animate={{ opacity: [0.5, 0, 0.5], scale: [1, 1.5, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 bg-white/20 rounded-xl"
+                />
+                <span className="relative flex items-center">
+                  {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Square className="w-4 h-4 mr-2 fill-white" />}
+                  End Meeting & Process
+                </span>
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {roomName && (
-        <div className="bg-card rounded-2xl border overflow-hidden">
-          <iframe
-            title="Jitsi Meeting"
-            src={`https://meet.jit.si/${roomName}`}
-            allow="camera; microphone; fullscreen; display-capture"
-            style={{ width: '100%', height: '600px', border: 'none' }}
-          />
-        </div>
-      )}
+      <AnimatePresence>
+        {roomName && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-card rounded-2xl border overflow-hidden"
+          >
+            <iframe
+              title="Jitsi Meeting"
+              src={`https://meet.jit.si/${roomName}`}
+              allow="camera; microphone; fullscreen; display-capture"
+              style={{ width: '100%', height: '600px', border: 'none' }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {(runId || pipelineUpdates.length > 0) && (
-        <div className="bg-card rounded-2xl border p-6">
-          <h3 className="text-sm font-semibold">Pipeline Status</h3>
-          {runId && <p className="text-xs text-muted-foreground mt-1 font-mono">Run ID: {runId}</p>}
+      <AnimatePresence>
+        {(runId || pipelineUpdates.length > 0) && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border p-6"
+          >
+            <h3 className="text-sm font-semibold">Pipeline Status</h3>
+            {runId && <p className="text-xs text-muted-foreground mt-1 font-mono">Run ID: {runId}</p>}
 
-          <div className="mt-4 rounded-xl border bg-muted/20 p-4">
-            {pipelineUpdates.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Waiting for pipeline updates...</p>
-            ) : (
-              <ul className="space-y-2">
-                {pipelineUpdates.map((line, index) => (
-                  <li key={`${line}-${index}`} className="text-sm text-foreground/90">
-                    {line}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+            <div className="mt-4 rounded-xl border bg-muted/20 p-4 max-h-64 overflow-y-auto">
+              {pipelineUpdates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Waiting for pipeline updates...</p>
+              ) : (
+                <ul className="space-y-2">
+                  <AnimatePresence>
+                    {pipelineUpdates.map((line, index) => (
+                      <motion.li 
+                        key={`${line}-${index}`}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="text-sm text-foreground/90 font-mono tracking-tight"
+                      >
+                        {line}
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
+                </ul>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

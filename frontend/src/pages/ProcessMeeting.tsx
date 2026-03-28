@@ -177,7 +177,12 @@ export default function ProcessMeeting() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.3 }}
+      className="max-w-3xl mx-auto space-y-6"
+    >
       {/* Input Card */}
       <div className="bg-card rounded-2xl border p-6">
         <h2 className="text-lg font-semibold">Process a meeting transcript</h2>
@@ -291,6 +296,6 @@ export default function ProcessMeeting() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }

@@ -85,22 +85,40 @@ export default function AuditTrail() {
 
   const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000');
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="space-y-4">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-4"
+    >
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Total Events', value: events.length },
           { label: 'Agents Active', value: agents.length },
           { label: 'Success Rate', value: `${successRate}%` },
           { label: 'Filtered', value: filtered.length },
         ].map(s => (
-          <div key={s.label} className="bg-card rounded-2xl border p-4">
+          <motion.div whileHover={{ y: -2 }} key={s.label} className="bg-card rounded-2xl border p-4 shadow-sm">
             <p className="text-xs text-muted-foreground">{s.label}</p>
             <p className="text-xl font-bold mt-1">{s.value}</p>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -243,6 +261,6 @@ export default function AuditTrail() {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

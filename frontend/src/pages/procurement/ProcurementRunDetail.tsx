@@ -62,6 +62,29 @@ interface InvoiceFormData {
   vendor_bank_ref: string;
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24
+    }
+  }
+};
+
 export default function ProcurementRunDetail() {
   const { runId } = useParams<{ runId: string }>();
   const navigate = useNavigate();
@@ -262,9 +285,9 @@ export default function ProcurementRunDetail() {
   const showReviewWarning = run.current_step.startsWith('pending_');
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -298,7 +321,7 @@ export default function ProcurementRunDetail() {
           </Button>
           <StatusBadge status={run.status} />
         </div>
-      </div>
+      </motion.div>
 
       {/* Success/Failure Banners */}
       <AnimatePresence>
@@ -335,96 +358,105 @@ export default function ProcurementRunDetail() {
 
       {/* Review Warning */}
       {showReviewWarning && (
-        <Alert className="border-amber-700 bg-amber-900/20">
-          <AlertCircle className="w-4 h-4 text-amber-500" />
-          <AlertDescription className="text-amber-300 ml-2">
-            This run is paused — awaiting human review.{' '}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/procurement/reviews')}
-              className="text-amber-300 hover:text-amber-200 underline p-0 h-auto"
-            >
-              Go to Review Queue
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <motion.div variants={itemVariants}>
+          <Alert className="border-amber-700 bg-amber-900/20">
+            <AlertCircle className="w-4 h-4 text-amber-500" />
+            <AlertDescription className="text-amber-300 ml-2">
+              This run is paused — awaiting human review.{' '}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/procurement/reviews')}
+                className="text-amber-300 hover:text-amber-200 underline p-0 h-auto"
+              >
+                Go to Review Queue
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </motion.div>
       )}
 
       {/* Pipeline Stepper */}
-      <Card className="border-slate-800 bg-slate-950">
-        <CardHeader>
-          <CardTitle>Pipeline Progress</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PipelineStepper currentStep={run.current_step} />
-        </CardContent>
-      </Card>
+      <motion.div variants={itemVariants}>
+        <Card className="border-slate-800 bg-card">
+          <CardHeader>
+            <CardTitle>Pipeline Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PipelineStepper currentStep={run.current_step} />
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Stage Data Cards */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-100">Stage Details</h2>
+        <motion.h2 variants={itemVariants} className="text-xl font-bold">Stage Details</motion.h2>
 
         {/* Purchase Request */}
         {Object.keys(purchaseRequest).length > 0 && (
-          <StageCard title="Purchase Request" icon={<Clipboard className="w-5 h-5 text-blue-400" />} color="blue">
-            <StageDetailRow
-              label="Item Name"
-              value={purchaseRequest.item_name}
-            />
-            <StageDetailRow
-              label="Quantity"
-              value={purchaseRequest.quantity}
-            />
-            <StageDetailRow
-              label="Unit Price"
-              value={formatCurrency(purchaseRequest.unit_price)}
-            />
-            <StageDetailRow
-              label="Total Amount"
-              value={formatCurrency(
-                purchaseRequest.quantity * purchaseRequest.unit_price
-              )}
-            />
-            <StageDetailRow
-              label="Department"
-              value={purchaseRequest.department}
-            />
-            <StageDetailRow
-              label="Category"
-              value={purchaseRequest.category}
-            />
-          </StageCard>
+          <motion.div variants={itemVariants}>
+            <StageCard title="Purchase Request" icon={<Clipboard className="w-5 h-5 text-blue-400" />} color="blue">
+              <StageDetailRow
+                label="Item Name"
+                value={purchaseRequest.item_name}
+              />
+              <StageDetailRow
+                label="Quantity"
+                value={purchaseRequest.quantity}
+              />
+              <StageDetailRow
+                label="Unit Price"
+                value={formatCurrency(purchaseRequest.unit_price)}
+              />
+              <StageDetailRow
+                label="Total Amount"
+                value={formatCurrency(
+                  purchaseRequest.quantity * purchaseRequest.unit_price
+                )}
+              />
+              <StageDetailRow
+                label="Department"
+                value={purchaseRequest.department}
+              />
+              <StageDetailRow
+                label="Category"
+                value={purchaseRequest.category}
+              />
+            </StageCard>
+          </motion.div>
         )}
 
         {/* Budget */}
         {Object.keys(budgetData).length > 0 && (
-          <StageCard title="Budget Check" icon={<PiggyBank className="w-5 h-5 text-amber-400" />} color="amber">
-            <StageDetailRow
-              label="Status"
-              value={<StatusBadge status={budgetData.budget_status} />}
-            />
-            <StageDetailRow
-              label="Allocated Budget"
-              value={formatCurrency(budgetData.allocated_budget)}
-            />
-            <StageDetailRow
-              label="Spent So Far"
-              value={formatCurrency(budgetData.spent_so_far)}
-            />
-            <StageDetailRow
-              label="Remaining After"
-              value={formatCurrency(budgetData.remaining_after)}
-            />
-            {budgetData.reason && (
-              <StageDetailRow label="Reason" value={budgetData.reason} />
-            )}
-          </StageCard>
+          <motion.div variants={itemVariants}>
+            <StageCard title="Budget Check" icon={<PiggyBank className="w-5 h-5 text-amber-400" />} color="amber">
+              <StageDetailRow
+                label="Status"
+                value={<StatusBadge status={budgetData.budget_status} />}
+              />
+              <StageDetailRow
+                label="Allocated Budget"
+                value={formatCurrency(budgetData.allocated_budget)}
+              />
+              <StageDetailRow
+                label="Spent So Far"
+                value={formatCurrency(budgetData.spent_so_far)}
+              />
+              <StageDetailRow
+                label="Remaining After"
+                value={formatCurrency(budgetData.remaining_after)}
+              />
+              {budgetData.reason && (
+                <StageDetailRow label="Reason" value={budgetData.reason} />
+              )}
+            </StageCard>
+          </motion.div>
         )}
 
         {/* Vendor */}
         {Object.keys(vendorData).length > 0 && (
-          <StageCard title="Vendor Selection" icon={<Building2 className="w-5 h-5 text-purple-400" />} color="purple">
+          <motion.div variants={itemVariants}>
+            <StageCard title="Vendor Selection" icon={<Building2 className="w-5 h-5 text-purple-400" />} color="purple">
             <StageDetailRow label="Vendor Name" value={vendorData.vendor_name} />
             <StageDetailRow label="Vendor ID" value={vendorData.vendor_id} />
             <StageDetailRow label="Score" value={`${vendorData.score}/100`} />
@@ -440,12 +472,14 @@ export default function ProcurementRunDetail() {
                 value={<span className="italic text-slate-400">{vendorData.selection_reason}</span>}
               />
             )}
-          </StageCard>
+            </StageCard>
+          </motion.div>
         )}
 
         {/* PO */}
         {Object.keys(poData).length > 0 && (
-          <StageCard title="Purchase Order" icon={<FileText className="w-5 h-5 text-cyan-400" />} color="cyan">
+          <motion.div variants={itemVariants}>
+            <StageCard title="Purchase Order" icon={<FileText className="w-5 h-5 text-cyan-400" />} color="cyan">
             <StageDetailRow label="PO ID" value={poData.po_id} />
             <StageDetailRow
               label="Status"
@@ -464,29 +498,33 @@ export default function ProcurementRunDetail() {
             {poData.retry_count > 0 && (
               <StageDetailRow label="Retry Count" value={poData.retry_count} />
             )}
-          </StageCard>
+            </StageCard>
+          </motion.div>
         )}
 
         {/* Goods Receipt */}
         {Object.keys(grData).length > 0 && (
-          <StageCard title="Goods Receipt" icon={<Package className="w-5 h-5 text-rose-400" />} color="rose">
-            <StageDetailRow label="GR ID" value={grData.gr_id} />
-            <StageDetailRow
-              label="Match Status"
-              value={<StatusBadge status={grData.match_status} />}
-            />
-            {grData.discrepancy_details && (
+          <motion.div variants={itemVariants}>
+            <StageCard title="Goods Receipt" icon={<Package className="w-5 h-5 text-rose-400" />} color="rose">
+              <StageDetailRow label="GR ID" value={grData.gr_id} />
               <StageDetailRow
-                label="Discrepancies"
-                value={<span className="text-red-400">{grData.discrepancy_details}</span>}
+                label="Match Status"
+                value={<StatusBadge status={grData.match_status} />}
               />
-            )}
-          </StageCard>
+              {grData.discrepancy_details && (
+                <StageDetailRow
+                  label="Discrepancies"
+                  value={<span className="text-red-400">{grData.discrepancy_details}</span>}
+                />
+              )}
+            </StageCard>
+          </motion.div>
         )}
 
         {/* Invoice */}
         {Object.keys(invoiceData).length > 0 && (
-          <StageCard title="Invoice Matching" icon={<Search className="w-5 h-5 text-indigo-400" />} color="indigo">
+          <motion.div variants={itemVariants}>
+            <StageCard title="Invoice Matching" icon={<Search className="w-5 h-5 text-indigo-400" />} color="indigo">
             <StageDetailRow
               label="Match Result"
               value={<StatusBadge status={invoiceData.match_result} />}
@@ -507,12 +545,13 @@ export default function ProcurementRunDetail() {
                 }
               />
             )}
-          </StageCard>
+            </StageCard>
+          </motion.div>
         )}
 
         {/* Payment */}
         {Object.keys(paymentData).length > 0 && (
-          <>
+          <motion.div variants={itemVariants}>
             {paymentSuccess ? (
               // Success State
               <StageCard
@@ -631,13 +670,14 @@ export default function ProcurementRunDetail() {
                 </div>
               </StageCard>
             )}
-          </>
+          </motion.div>
         )}
       </div>
 
       {/* Action Forms */}
       {showDeliveryForm && (
-        <Card className="border-amber-700 bg-amber-900/10">
+        <motion.div variants={itemVariants}>
+          <Card className="border-amber-700 bg-amber-900/10">
           <CardHeader>
             <CardTitle className="text-amber-300">Record Goods Receipt</CardTitle>
             <p className="text-xs text-amber-300/70 mt-2">💡 Auto-refresh is paused while filling this form to protect your entry</p>
@@ -741,9 +781,11 @@ export default function ProcurementRunDetail() {
             </form>
           </CardContent>
         </Card>
+        </motion.div>
       )}
 
       {showInvoiceForm && (
+        <motion.div variants={itemVariants}>
         <Card className="border-blue-700 bg-blue-900/10">
           <CardHeader>
             <CardTitle className="text-blue-300">Submit Vendor Invoice</CardTitle>
@@ -883,10 +925,12 @@ export default function ProcurementRunDetail() {
             </form>
           </CardContent>
         </Card>
+        </motion.div>
       )}
 
       {/* Audit Trail */}
-      <Card className="border-slate-800 bg-slate-950">
+      <motion.div variants={itemVariants} data-audit-section>
+        <Card className="border-slate-800 bg-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Audit Trail</CardTitle>
           <Button
@@ -900,11 +944,12 @@ export default function ProcurementRunDetail() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div data-audit-section>
+          <div>
             <AuditTable events={auditEvents} />
           </div>
         </CardContent>
       </Card>
+      </motion.div>
 
       {/* Payment Gateway Modal */}
       <PaymentGatewayModal

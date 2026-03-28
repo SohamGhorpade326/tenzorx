@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { MetricCard } from '@/components/MetricCard';
 import { PipelineStatusBadge } from '@/components/StatusBadge';
 import { CheckSquare, AlertTriangle, Clock, Bell, RefreshCw } from 'lucide-react';
@@ -6,6 +7,9 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 import { Button } from '@/components/ui/button';
 import * as api from '@/lib/api';
 import { toast } from 'sonner';
+
+// ...
+
 
 interface DashboardData {
   total_tasks: number;
@@ -82,26 +86,44 @@ export default function Dashboard() {
   const totalTasks = data.total_tasks;
   const distribution = data.task_status_distribution.filter(s => s.value > 0);
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="space-y-6">
+    <motion.div 
+      className="space-y-6"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
       {/* Header with refresh */}
-      <div className="flex items-center justify-between">
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div />
         <Button variant="ghost" size="sm" className="rounded-xl text-muted-foreground" onClick={load}>
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
         </Button>
-      </div>
+      </motion.div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <MetricCard title="Total Tasks" value={data.total_tasks} subtitle="across all meetings" icon={CheckSquare} />
         <MetricCard title="Overdue" value={data.overdue_count} subtitle="need immediate attention" color="destructive" icon={AlertTriangle} />
         <MetricCard title="At Risk" value={data.at_risk_count} subtitle="deadline within 48hrs" color="warning" icon={Clock} />
         <MetricCard title="Escalations Sent" value={data.escalations_sent} subtitle="total sent" color="primary" icon={Bell} />
-      </div>
+      </motion.div>
 
       {/* Pipeline Runs + Task Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Recent Pipeline Runs */}
         <div className="lg:col-span-3 bg-card rounded-2xl border p-5">
           <h3 className="font-semibold mb-4">Recent Pipeline Runs</h3>
@@ -184,10 +206,10 @@ export default function Dashboard() {
             </>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Agent Activity */}
-      <div className="bg-card rounded-2xl border p-5">
+      <motion.div variants={itemVariants} className="bg-card rounded-2xl border p-5">
         <h3 className="font-semibold mb-4">Agent Activity (Last 24hrs)</h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={agentBarMock}>
@@ -203,7 +225,7 @@ export default function Dashboard() {
             <Bar dataKey="calls" fill="hsl(239 84% 67%)" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
