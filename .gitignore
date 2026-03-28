@@ -6,6 +6,7 @@ logs/
 *.bak
 *.swp
 *.swo
+Thumbs.db
 
 # --- System ---
 .vscode/
@@ -18,6 +19,7 @@ logs/
 node_modules/
 dist/
 dist-ssr/
+.vite/
 frontend/node_modules/
 frontend/dist/
 frontend/test-results/
@@ -29,75 +31,56 @@ frontend.zip
 # --- Backend (Python/FastAPI) ---
 __pycache__/
 *.py[cod]
-microservices/meetingworkflow/__pycache__/
-microservices/meetingworkflow/venv/
-microservices/meetingworkflow/.venv/
-microservices/meetingworkflow/env/
-microservices/meetingworkflow/.env/
-microservices/meetingworkflow/build/
-microservices/meetingworkflow/develop-eggs/
-microservices/meetingworkflow/dist/
-microservices/meetingworkflow/downloads/
-microservices/meetingworkflow/eggs/
-microservices/meetingworkflow/.eggs/
-microservices/meetingworkflow/lib/
-microservices/meetingworkflow/lib64/
-microservices/meetingworkflow/parts/
-microservices/meetingworkflow/sdist/
-microservices/meetingworkflow/var/
-microservices/meetingworkflow/wheels/
-microservices/meetingworkflow/share/python-wheels/
-microservices/meetingworkflow/*.egg-info/
-microservices/meetingworkflow/.installed.cfg
+*$py.class
 
-# --- Procurement Backend (etgenai) ---
-microservices/procurementworkflow/__pycache__/
-microservices/procurementworkflow/venv/
-microservices/procurementworkflow/.venv/
-microservices/procurementworkflow/env/
-microservices/procurementworkflow/.env*
-microservices/procurementworkflow/build/
-microservices/procurementworkflow/dist/
-microservices/procurementworkflow/*.egg-info/
-microservices/procurementworkflow/.installed.cfg
-microservices/procurementworkflow/procurement.db
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
 
-# --- Onboarding System ---
-microservices/onboardingworkflow/__pycache__/
-microservices/onboardingworkflow/venv/
-microservices/onboardingworkflow/.venv/
-microservices/onboardingworkflow/env/
-microservices/onboardingworkflow/.env*
-microservices/onboardingworkflow/*.egg-info/
-microservices/onboardingworkflow/onboarding.db*
-
-# --- Contract Workflow ---
-microservices/contract-workflow/__pycache__/
-microservices/contract-workflow/venv/
-microservices/contract-workflow/.venv/
-microservices/contract-workflow/env/
-microservices/contract-workflow/.env*
-microservices/contract-workflow/*.egg-info/
-microservices/contract-workflow/contracts.db*
-
-procurement.db
-microservices/meetingworkflow/*.egg
-microservices/meetingworkflow/MANIFEST
-microservices/meetingworkflow/.pytest_cache/
-microservices/meetingworkflow/.mypy_cache/
-microservices/meetingworkflow/.tox/
-microservices/meetingworkflow/.nox/
-microservices/meetingworkflow/.coverage
-microservices/meetingworkflow/htmlcov/
-microservices/meetingworkflow/nosetests.xml
-microservices/meetingworkflow/coverage.xml
-microservices/meetingworkflow/*.pyc
-microservices/meetingworkflow/*.pyo
-
-# --- Environment Secrets ---
-.env
+# Environment variables
+.env*
 .env.local
 .env.development.local
+.env.test.local
+.env.production.local
+
+# Build and distribution
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+*.egg
+MANIFEST
+.installed.cfg
+
+# Testing and coverage
+.pytest_cache/
+.mypy_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# Python version
+.python-version
+
+# Database files
+*.db
+*.sqlite3
 .env.test.local
 .env.production.local
 frontend/.env

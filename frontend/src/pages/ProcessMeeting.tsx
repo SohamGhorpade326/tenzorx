@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { AgentStepper, AgentStep } from '@/components/AgentStepper';
 import {
-  Sparkles, Upload, ShieldCheck, UserCheck, PlusSquare, Activity,
-  Bell, FileText, Mic, MicOff, Square
+  Sparkles, ShieldCheck, UserCheck, PlusSquare, Activity,
+  Bell, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity, AlertCircle, CheckCircle2, Clock3, FileText, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { StatusBadge } from '@/components/onboarding/StatusBadge';
+import { StatusBadge } from '@/components/workflow/StatusBadge';
 import * as onboardingApi from '@/lib/onboardingApi';
 
 type RunWithLogCount = onboardingApi.RunListItem & { logs_count: number };
@@ -37,29 +38,31 @@ function MetricCard({
   title,
   value,
   icon,
-  color,
+  tone,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  color: 'blue' | 'green' | 'amber' | 'red';
+  tone: 'primary' | 'success' | 'warning' | 'destructive';
 }) {
-  const colorClasses = {
-    blue: 'bg-blue-900/20 border-blue-700 text-blue-500',
-    green: 'bg-green-900/20 border-green-700 text-green-500',
-    amber: 'bg-amber-900/20 border-amber-700 text-amber-500',
-    red: 'bg-red-900/20 border-red-700 text-red-500',
+  const toneClasses = {
+    primary: 'text-primary border-primary/30 bg-primary/10',
+    success: 'text-success border-success/30 bg-success/10',
+    warning: 'text-warning border-warning/30 bg-warning/10',
+    destructive: 'text-destructive border-destructive/30 bg-destructive/10',
   };
 
   return (
-    <Card className={`border ${colorClasses[color]}`}>
-      <CardContent className="p-6">
+    <Card className="bg-card border">
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-slate-400 font-medium">{title}</div>
-            <div className="text-3xl font-bold text-slate-100 mt-2">{value}</div>
+            <div className="text-sm text-muted-foreground font-medium">{title}</div>
+            <div className="text-3xl font-bold mt-2">{value}</div>
           </div>
-          <div className="opacity-60">{icon}</div>
+          <div className={`h-10 w-10 rounded-md border flex items-center justify-center ${toneClasses[tone]}`}>
+            {icon}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -129,50 +132,50 @@ export default function OnboardingAnalytics() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-12 w-1/3 bg-slate-900/40" />
+        <Skeleton className="h-12 w-1/3" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, idx) => (
-            <Skeleton key={idx} className="h-32 bg-slate-900/40" />
+            <Skeleton key={idx} className="h-32" />
           ))}
         </div>
-        <Skeleton className="h-72 w-full bg-slate-900/40" />
+        <Skeleton className="h-72 w-full" />
       </div>
     );
   }
 
   const statusDistribution = [
-    { label: 'Completed', value: summary.completedRuns, color: 'bg-green-500' },
-    { label: 'Failed', value: summary.failedRuns, color: 'bg-red-500' },
-    { label: 'Running/Pending', value: summary.activeRuns, color: 'bg-amber-500' },
-    { label: 'Recovered', value: summary.recoveredRuns, color: 'bg-blue-500' },
+    { label: 'Completed', value: summary.completedRuns, color: 'bg-success' },
+    { label: 'Failed', value: summary.failedRuns, color: 'bg-destructive' },
+    { label: 'Running/Pending', value: summary.activeRuns, color: 'bg-warning' },
+    { label: 'Recovered', value: summary.recoveredRuns, color: 'bg-primary' },
   ];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100">Onboarding Analytics Summary</h1>
-          <p className="text-slate-400 mt-1">Computed from run list and per-run log counts.</p>
+          <h1 className="text-2xl font-bold">Onboarding Analytics</h1>
+          <p className="text-sm text-muted-foreground mt-1">Run health and audit signal metrics for onboarding workflows.</p>
         </div>
         <Button
           variant="outline"
-          className="border-slate-700 text-slate-300 hover:text-slate-100"
+          className="gap-2"
           onClick={fetchAnalytics}
         >
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <RefreshCw className="w-4 h-4" />
           Refresh
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Total Runs" value={summary.totalRuns} icon={<Activity className="w-8 h-8" />} color="blue" />
-        <MetricCard title="Completion Rate" value={`${summary.completionRate}%`} icon={<CheckCircle2 className="w-8 h-8" />} color="green" />
-        <MetricCard title="Failed Runs" value={summary.failedRuns} icon={<AlertCircle className="w-8 h-8" />} color="red" />
-        <MetricCard title="Total Audit Logs" value={summary.totalLogs} icon={<FileText className="w-8 h-8" />} color="amber" />
+        <MetricCard title="Total Runs" value={summary.totalRuns} icon={<Activity className="w-5 h-5" />} tone="primary" />
+        <MetricCard title="Completion Rate" value={`${summary.completionRate}%`} icon={<CheckCircle2 className="w-5 h-5" />} tone="success" />
+        <MetricCard title="Failed Runs" value={summary.failedRuns} icon={<AlertCircle className="w-5 h-5" />} tone="destructive" />
+        <MetricCard title="Total Audit Logs" value={summary.totalLogs} icon={<FileText className="w-5 h-5" />} tone="warning" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="border-slate-800 bg-slate-950 lg:col-span-2">
+        <Card className="bg-card border lg:col-span-2">
           <CardHeader>
             <CardTitle>Status Distribution</CardTitle>
           </CardHeader>
@@ -182,10 +185,10 @@ export default function OnboardingAnalytics() {
               return (
                 <div key={item.label} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-300">{item.label}</span>
-                    <span className="text-slate-400">{item.value} ({percentage.toFixed(1)}%)</span>
+                    <span className="text-foreground">{item.label}</span>
+                    <span className="text-muted-foreground">{item.value} ({percentage.toFixed(1)}%)</span>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div className={`h-full ${item.color}`} style={{ width: `${percentage}%` }} />
                   </div>
                 </div>
@@ -194,67 +197,67 @@ export default function OnboardingAnalytics() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-950">
+        <Card className="bg-card border">
           <CardHeader>
             <CardTitle>Log Highlights</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-slate-400">Avg Logs per Run</span>
-              <span className="text-slate-100 font-semibold">{summary.averageLogs}</span>
+            <div className="flex items-center justify-between border-b pb-3">
+              <span className="text-muted-foreground">Avg Logs per Run</span>
+              <span className="font-semibold">{summary.averageLogs}</span>
             </div>
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-slate-400">Active Runs</span>
-              <span className="text-slate-100 font-semibold">{summary.activeRuns}</span>
+            <div className="flex items-center justify-between border-b pb-3">
+              <span className="text-muted-foreground">Active Runs</span>
+              <span className="font-semibold">{summary.activeRuns}</span>
             </div>
             <div className="space-y-2">
-              <span className="text-slate-400">Most Active Run</span>
+              <span className="text-muted-foreground">Most Active Run</span>
               {summary.mostActiveRun ? (
-                <div className="rounded-md border border-slate-800 bg-slate-900/40 p-3">
-                  <div className="text-xs font-mono text-slate-100">{summary.mostActiveRun.run_id}</div>
+                <div className="rounded-md border bg-muted/20 p-3">
+                  <div className="text-xs font-mono">{summary.mostActiveRun.run_id}</div>
                   <div className="mt-2 flex items-center justify-between">
                     <StatusBadge status={summary.mostActiveRun.status} />
-                    <div className="text-xs text-slate-300 flex items-center gap-1">
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
                       <Clock3 className="w-3.5 h-3.5" />
                       {summary.mostActiveRun.logs_count} logs
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-slate-500">No runs available.</div>
+                <div className="text-muted-foreground">No runs available.</div>
               )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-slate-800 bg-slate-950">
+      <Card className="bg-card border">
         <CardHeader>
           <CardTitle>Runs and Log Counts</CardTitle>
         </CardHeader>
         <CardContent>
           {runs.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">No runs found.</div>
+            <div className="text-center py-8 text-muted-foreground">No runs found.</div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-slate-900/50">
-                  <TableRow className="border-slate-800 hover:bg-slate-900/50">
-                    <TableHead className="text-slate-400 text-xs font-semibold">Run ID</TableHead>
-                    <TableHead className="text-slate-400 text-xs font-semibold">Status</TableHead>
-                    <TableHead className="text-slate-400 text-xs font-semibold">Started</TableHead>
-                    <TableHead className="text-slate-400 text-xs font-semibold">Logs</TableHead>
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="hover:bg-muted/30">
+                    <TableHead className="text-muted-foreground text-xs font-semibold">Run ID</TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-semibold">Status</TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-semibold">Started</TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-semibold">Logs</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {runs.map((run) => (
-                    <TableRow key={run.run_id} className="border-slate-800 hover:bg-slate-900/40 transition-colors">
-                      <TableCell className="text-xs text-slate-100 font-mono">{run.run_id}</TableCell>
+                    <TableRow key={run.run_id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="text-xs font-mono">{run.run_id}</TableCell>
                       <TableCell>
                         <StatusBadge status={run.status} />
                       </TableCell>
-                      <TableCell className="text-xs text-slate-400">{formatTimestamp(run.started_at)}</TableCell>
-                      <TableCell className="text-xs text-slate-300">{run.logs_count}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{formatTimestamp(run.started_at)}</TableCell>
+                      <TableCell className="text-xs">{run.logs_count}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -265,12 +268,12 @@ export default function OnboardingAnalytics() {
       </Card>
 
       {summary.totalRuns > 0 && summary.totalLogs === 0 && (
-        <Card className="border-amber-700/50 bg-amber-900/20">
-          <CardContent className="pt-6 text-amber-200 flex items-center gap-2 text-sm">
+        <Alert className="border-warning/40 bg-warning/10">
+          <AlertDescription className="text-warning flex items-center gap-2 text-sm">
             <ShieldAlert className="w-4 h-4" />
             Runs are present but no logs were found yet. Workflows may still be in early execution.
-          </CardContent>
-        </Card>
+          </AlertDescription>
+        </Alert>
       )}
     </motion.div>
   );

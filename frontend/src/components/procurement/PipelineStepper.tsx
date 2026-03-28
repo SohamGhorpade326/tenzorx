@@ -77,11 +77,10 @@ function getStageStatusFromCurrentStep(
 
 interface StageIconProps {
   status: StageStatus;
-  isLast?: boolean;
 }
 
-function StageIcon({ status, isLast }: StageIconProps) {
-  const iconProps = 'w-6 h-6';
+function StageIcon({ status }: StageIconProps) {
+  const iconProps = 'w-4 h-4';
 
   switch (status) {
     case 'completed':
@@ -121,16 +120,16 @@ export function PipelineStepper({
   const getStatusColor = (status: StageStatus) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-900/20 border-green-700';
+        return 'bg-success/10 border-success/40';
       case 'active':
-        return 'bg-blue-900/20 border-blue-700';
+        return 'bg-primary/10 border-primary/40';
       case 'waiting':
-        return 'bg-amber-900/20 border-amber-700';
+        return 'bg-warning/10 border-warning/40';
       case 'blocked':
-        return 'bg-red-900/20 border-red-700';
+        return 'bg-destructive/10 border-destructive/40';
       case 'pending':
       default:
-        return 'bg-slate-900/20 border-slate-700';
+        return 'bg-muted/30 border-border';
     }
   };
 
@@ -151,13 +150,13 @@ export function PipelineStepper({
             >
               <div
                 className={cn(
-                  'flex items-center justify-center rounded-lg border p-3 mb-2 transition-all',
+                  'flex items-center justify-center rounded-md border p-2 mb-2 transition-all',
                   getStatusColor(status)
                 )}
               >
-                <StageIcon status={status} isLast={isLast} />
+                <StageIcon status={status} />
               </div>
-              <div className="text-xs font-medium text-slate-300 text-center max-w-[60px]">
+              <div className="text-xs font-medium text-muted-foreground text-center max-w-[80px]">
                 {stage.name}
               </div>
             </motion.div>
@@ -180,22 +179,22 @@ export function PipelineStepper({
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className="flex gap-4 items-start"
+            className="relative flex gap-4 items-start"
           >
             {/* Icon */}
             <div
               className={cn(
-                'flex items-center justify-center rounded-lg border p-3 mt-0.5 flex-shrink-0 transition-all',
+                'flex items-center justify-center rounded-md border p-2 mt-0.5 flex-shrink-0 transition-all',
                 getStatusColor(status)
               )}
             >
-              <StageIcon status={status} isLast={isLast} />
+              <StageIcon status={status} />
             </div>
 
             {/* Content */}
-            <div className="flex-1 py-3">
-              <div className="font-medium text-slate-100">{stage.name}</div>
-              <div className="text-xs text-slate-400 mt-1">
+            <div className="flex-1 py-2">
+              <div className="font-medium text-foreground">{stage.name}</div>
+              <div className="text-xs text-muted-foreground mt-1">
                 {status === 'completed' && 'Completed'}
                 {status === 'active' && 'In Progress'}
                 {status === 'waiting' && 'Awaiting Action'}
@@ -208,8 +207,8 @@ export function PipelineStepper({
             {!isLast && (
               <div
                 className={cn(
-                  'absolute left-[27px] top-[60px] w-0.5 h-12',
-                  status === 'completed' ? 'bg-green-600' : 'bg-slate-700'
+                  'absolute left-[17px] top-[38px] w-0.5 h-10',
+                  status === 'completed' ? 'bg-success/60' : 'bg-border'
                 )}
               />
             )}

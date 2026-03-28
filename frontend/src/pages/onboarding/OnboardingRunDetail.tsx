@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { StatusBadge } from '@/components/onboarding/StatusBadge';
+import { StatusBadge } from '@/components/workflow/StatusBadge';
 import { StageCard, StageDetailRow } from '@/components/procurement/StageCard';
 import * as onboardingApi from '@/lib/onboardingApi';
 

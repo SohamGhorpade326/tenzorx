@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { StatusBadge } from '@/components/procurement/StatusBadge';
+import { StatusBadge } from '@/components/workflow/StatusBadge';
 import * as procurementApi from '@/lib/procurementApi';
 
 interface MetricCardProps {
