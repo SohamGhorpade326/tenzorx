@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { StatusBadge } from '@/components/procurement/StatusBadge';
+import { StatusBadge } from '@/components/workflow/StatusBadge';
 import { PipelineStepper } from '@/components/procurement/PipelineStepper';
 import { AuditTable } from '@/components/procurement/AuditTable';
 import { StageCard, StageDetailRow } from '@/components/procurement/StageCard';

@@ -159,13 +159,6 @@ Then open [http://localhost:5173](http://localhost:5173)
 3. Click **Process Meeting**
 4. Watch the real-time agent pipeline execute via WebSocket
 
-### Sample transcripts are at:
-- `microservices/meetingworkflow/data/sample_transcript_1.txt` — Q3 Planning Meeting
-- `microservices/meetingworkflow/data/sample_transcript_2.txt` — Sprint Retrospective
-- `microservices/meetingworkflow/data/sample_transcript_3.txt` — Client Sync Call
-
----
-
 ## What Each Agent Does
 
 | Agent | Responsibility |
@@ -206,7 +199,7 @@ meetingmind/
 │       │   ├── pipeline.py           ← GET /api/pipeline/runs
 │       │   └── websocket.py          ← WS /api/ws/pipeline/{run_id}
 │       ├── data/
-│       │   └── sample_transcript_*.txt
+│       │   └── github_exports/
 │       ├── main.py                   ← FastAPI app + CORS + startup
 │       ├── scheduler.py              ← APScheduler (tracker every 5 min)
 │       ├── config.py                 ← Env vars

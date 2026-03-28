@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge } from '@/components/workflow/StatusBadge';
 import { cn } from '@/lib/utils';
 
 interface ReviewCardProps {
@@ -84,9 +84,9 @@ export function ReviewCard({
     >
       <Card
         className={cn(
-          'border-slate-800 bg-slate-950 overflow-hidden',
-          status === 'APPROVED' && 'border-green-700/30 bg-green-900/10',
-          status === 'REJECTED' && 'border-red-700/30 bg-red-900/10'
+          'border bg-card overflow-hidden',
+          status === 'APPROVED' && 'border-success/40 bg-success/5',
+          status === 'REJECTED' && 'border-destructive/40 bg-destructive/5'
         )}
       >
         <div className="p-4 space-y-3">
@@ -95,19 +95,19 @@ export function ReviewCard({
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-2">
                 <StatusBadge status={agentName.toUpperCase() as any} />
-                <span className="text-xs text-slate-500">{reviewId.substring(0, 12)}</span>
+                <span className="text-xs text-muted-foreground">{reviewId.substring(0, 12)}</span>
               </div>
-              <p className="text-sm font-medium text-slate-100">{reason}</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-sm font-medium">{reason}</p>
+              <p className="text-xs text-muted-foreground">
                 Run:{' '}
                 <button
                   onClick={() => onRunClick?.(runId)}
-                  className="text-blue-400 hover:text-blue-300 transition-colors font-mono"
+                  className="text-primary hover:text-primary/80 transition-colors font-mono"
                 >
                   {runId.substring(0, 12)}
                 </button>
               </p>
-              <p className="text-xs text-slate-500">{formatTimestamp(createdAt)}</p>
+              <p className="text-xs text-muted-foreground">{formatTimestamp(createdAt)}</p>
             </div>
 
             {/* Status Badge */}
@@ -117,10 +117,10 @@ export function ReviewCard({
           </div>
 
           {/* Expandable Payload */}
-          <div className="border-t border-slate-800 pt-3">
+          <div className="border-t pt-3">
             <button
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-300 transition-colors"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
               <span>Details</span>
@@ -132,9 +132,9 @@ export function ReviewCard({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mt-2 bg-slate-900/50 rounded border border-slate-800 p-2"
+                  className="mt-2 bg-muted/20 rounded border p-2"
                 >
-                  <pre className="text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                  <pre className="text-xs text-foreground/90 overflow-x-auto whitespace-pre-wrap">
                     {JSON.stringify(payload, null, 2)}
                   </pre>
                 </motion.div>
@@ -144,13 +144,13 @@ export function ReviewCard({
 
           {/* Actions */}
           {isPending && (
-            <div className="flex gap-2 pt-2 border-t border-slate-800">
+            <div className="flex gap-2 pt-2 border-t">
               <Button
                 variant="default"
                 size="sm"
                 onClick={handleApprove}
                 disabled={isLoading || actionInProgress !== null}
-                className="flex-1 bg-green-700 hover:bg-green-600 text-white text-xs"
+                className="flex-1 bg-success hover:bg-success/90 text-success-foreground text-xs"
               >
                 {actionInProgress === 'approve' ? 'Approving...' : 'Approve'}
               </Button>
@@ -159,7 +159,7 @@ export function ReviewCard({
                 size="sm"
                 onClick={handleReject}
                 disabled={isLoading || actionInProgress !== null}
-                className="flex-1 bg-red-700 hover:bg-red-600 text-white text-xs"
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs"
               >
                 {actionInProgress === 'reject' ? 'Rejecting...' : 'Reject'}
               </Button>

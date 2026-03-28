@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge } from '@/components/workflow/StatusBadge';
 import { cn } from '@/lib/utils';
 
 interface AuditEvent {
@@ -51,7 +51,7 @@ function PayloadCell({ payload, error }: { payload: Record<string, unknown>; err
     <div className="space-y-2">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-300 transition-colors"
+        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
         <span>View Details</span>
@@ -62,11 +62,11 @@ function PayloadCell({ payload, error }: { payload: Record<string, unknown>; err
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-slate-900/50 rounded border border-slate-800 p-2"
+            className="bg-muted/20 rounded border p-2"
           >
-            <pre className="text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap">
+            <pre className="text-xs text-foreground/90 overflow-x-auto whitespace-pre-wrap">
               {error && (
-                <div className="text-red-400 mb-2">
+                <div className="text-destructive mb-2">
                   <strong>Error:</strong> {error}
                 </div>
               )}
@@ -89,7 +89,7 @@ export function AuditTable({
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-12 bg-slate-900/40 rounded animate-pulse" />
+          <div key={i} className="h-12 bg-muted/40 rounded animate-pulse" />
         ))}
       </div>
     );
@@ -97,23 +97,23 @@ export function AuditTable({
 
   if (events.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-400">
+      <div className="text-center py-8 text-muted-foreground">
         <p className="text-sm">No audit events found</p>
       </div>
     );
   }
 
   return (
-    <div className={cn('border border-slate-800 rounded-lg overflow-hidden', className)}>
+    <div className={cn('border rounded-lg overflow-hidden', className)}>
       <Table>
-        <TableHeader className="bg-slate-900/50 border-b border-slate-800">
-          <TableRow className="hover:bg-slate-900/50">
-            <TableHead className="text-slate-400 text-xs font-semibold">Time</TableHead>
-            {showRunId && <TableHead className="text-slate-400 text-xs font-semibold">Run ID</TableHead>}
-            <TableHead className="text-slate-400 text-xs font-semibold">Agent</TableHead>
-            <TableHead className="text-slate-400 text-xs font-semibold">Action</TableHead>
-            <TableHead className="text-slate-400 text-xs font-semibold">Status</TableHead>
-            <TableHead className="text-slate-400 text-xs font-semibold">Details</TableHead>
+        <TableHeader className="bg-muted/30 border-b">
+          <TableRow className="hover:bg-muted/30">
+            <TableHead className="text-muted-foreground text-xs font-semibold">Time</TableHead>
+            {showRunId && <TableHead className="text-muted-foreground text-xs font-semibold">Run ID</TableHead>}
+            <TableHead className="text-muted-foreground text-xs font-semibold">Agent</TableHead>
+            <TableHead className="text-muted-foreground text-xs font-semibold">Action</TableHead>
+            <TableHead className="text-muted-foreground text-xs font-semibold">Status</TableHead>
+            <TableHead className="text-muted-foreground text-xs font-semibold">Details</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -121,24 +121,24 @@ export function AuditTable({
             <TableRow
               key={event.id}
               className={cn(
-                'border-b border-slate-800 hover:bg-slate-900/40 transition-colors',
-                event.status === 'SUCCESS' && 'bg-green-900/5',
-                event.status === 'FAILURE' && 'bg-red-900/5',
-                event.status === 'RETRY' && 'bg-amber-900/5'
+                'border-b hover:bg-muted/20 transition-colors',
+                event.status === 'SUCCESS' && 'bg-success/5',
+                event.status === 'FAILURE' && 'bg-destructive/5',
+                event.status === 'RETRY' && 'bg-warning/5'
               )}
             >
-              <TableCell className="text-xs text-slate-300 font-mono">
+              <TableCell className="text-xs text-muted-foreground font-mono">
                 {formatTimestamp(event.created_at)}
               </TableCell>
               {showRunId && (
-                <TableCell className="text-xs text-slate-400 font-mono">
+                <TableCell className="text-xs text-muted-foreground font-mono">
                   {event.run_id?.substring(0, 12)}
                 </TableCell>
               )}
-              <TableCell className="text-xs text-slate-100 font-medium">
+              <TableCell className="text-xs font-medium">
                 {event.agent_name}
               </TableCell>
-              <TableCell className="text-xs text-slate-300">{event.action}</TableCell>
+              <TableCell className="text-xs text-foreground/90">{event.action}</TableCell>
               <TableCell>
                 <StatusBadge status={event.status} />
               </TableCell>

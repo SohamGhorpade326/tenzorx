@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { StatusBadge } from '@/components/contract/StatusBadge';
+import { StatusBadge } from '@/components/workflow/StatusBadge';
 import * as contractApi from '@/lib/contractApi';
 
 interface MetricCardProps {
