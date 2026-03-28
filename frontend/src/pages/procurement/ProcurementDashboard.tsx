@@ -61,6 +61,30 @@ function formatTimestamp(isoString: string): string {
   }
 }
 
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24
+    }
+  }
+};
+
 export default function ProcurementDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -103,12 +127,13 @@ export default function ProcurementDashboard() {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
       className="space-y-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Procurement Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Overview of all purchase-to-payment runs</p>
@@ -120,18 +145,18 @@ export default function ProcurementDashboard() {
           <Plus className="w-4 h-4" />
           New Purchase Request
         </Button>
-      </div>
+      </motion.div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Total Runs" value={stats.total} icon={<Activity className="w-8 h-8" />} color="blue" />
         <MetricCard title="Completed" value={stats.completed} icon={<CheckCircle2 className="w-8 h-8" />} color="green" />
         <MetricCard title="Failed" value={stats.failed} icon={<AlertCircle className="w-8 h-8" />} color="red" />
         <MetricCard title="Pending/Running" value={stats.pending} icon={<Clock className="w-8 h-8" />} color="amber" />
-      </div>
+      </motion.div>
 
       {/* Runs Table */}
-      <div className="bg-card rounded-2xl border p-5">
+      <motion.div variants={itemVariants} className="bg-card rounded-2xl border p-5">
         <h3 className="font-semibold mb-4">Recent Runs</h3>
         {loading ? (
           <div className="space-y-3">
@@ -156,9 +181,10 @@ export default function ProcurementDashboard() {
                   <th className="pb-3 font-medium">Action</th>
                 </tr>
               </thead>
-              <tbody>
+              <motion.tbody variants={containerVariants}>
                 {runs.map((run) => (
-                  <tr
+                  <motion.tr
+                    variants={itemVariants}
                     key={run.run_id}
                     className="border-b border-border/50 hover:bg-muted/50 transition-colors"
                   >
@@ -187,13 +213,13 @@ export default function ProcurementDashboard() {
                         View
                       </Button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
-              </tbody>
+              </motion.tbody>
             </table>
           </div>
         )}
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

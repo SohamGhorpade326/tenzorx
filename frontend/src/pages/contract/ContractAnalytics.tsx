@@ -69,6 +69,23 @@ function MetricCard({
   );
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+};
+
 export default function ContractAnalytics() {
   const [loading, setLoading] = useState(true);
   const [runs, setRuns] = useState<RunWithLogCount[]>([]);
@@ -151,8 +168,8 @@ export default function ContractAnalytics() {
   ];
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Contract Analytics</h1>
           <p className="text-sm text-muted-foreground mt-1">Run health and audit signal metrics for contract workflows.</p>
@@ -165,17 +182,18 @@ export default function ContractAnalytics() {
           <RefreshCw className="w-4 h-4" />
           Refresh
         </Button>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Total Runs" value={summary.totalRuns} icon={<Activity className="w-5 h-5" />} tone="primary" />
         <MetricCard title="Completion Rate" value={`${summary.completionRate}%`} icon={<CheckCircle2 className="w-5 h-5" />} tone="success" />
         <MetricCard title="Failed Runs" value={summary.failedRuns} icon={<AlertCircle className="w-5 h-5" />} tone="destructive" />
         <MetricCard title="Total Audit Logs" value={summary.totalLogs} icon={<FileText className="w-5 h-5" />} tone="warning" />
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-card border lg:col-span-2">
+        <motion.div variants={itemVariants} className="lg:col-span-2">
+        <Card className="bg-card border h-full">
           <CardHeader>
             <CardTitle>Status Distribution</CardTitle>
           </CardHeader>
@@ -196,8 +214,10 @@ export default function ContractAnalytics() {
             })}
           </CardContent>
         </Card>
+        </motion.div>
 
-        <Card className="bg-card border">
+        <motion.div variants={itemVariants}>
+        <Card className="bg-card border h-full">
           <CardHeader>
             <CardTitle>Log Highlights</CardTitle>
           </CardHeader>
@@ -229,8 +249,10 @@ export default function ContractAnalytics() {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
       </div>
 
+      <motion.div variants={itemVariants}>
       <Card className="bg-card border">
         <CardHeader>
           <CardTitle>Runs and Log Counts</CardTitle>
@@ -249,23 +271,24 @@ export default function ContractAnalytics() {
                     <TableHead className="text-muted-foreground text-xs font-semibold">Logs</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <motion.tbody variants={containerVariants}>
                   {runs.map((run) => (
-                    <TableRow key={run.run_id} className="hover:bg-muted/30 transition-colors">
+                    <motion.tr variants={itemVariants} key={run.run_id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                       <TableCell className="text-xs font-mono">{run.run_id}</TableCell>
                       <TableCell>
                         <StatusBadge status={run.status} />
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{formatTimestamp(run.started_at)}</TableCell>
                       <TableCell className="text-xs">{run.logs_count}</TableCell>
-                    </TableRow>
+                    </motion.tr>
                   ))}
-                </TableBody>
+                </motion.tbody>
               </Table>
             </div>
           )}
         </CardContent>
       </Card>
+      </motion.div>
 
       {summary.totalRuns > 0 && summary.totalLogs === 0 && (
         <Alert className="border-warning/40 bg-warning/10">

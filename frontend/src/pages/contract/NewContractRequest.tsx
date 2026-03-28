@@ -9,6 +9,23 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import * as contractApi from '@/lib/contractApi';
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+};
+
 export default function NewContractRequest() {
   const navigate = useNavigate();
   const [contractId, setContractId] = useState('');
@@ -36,8 +53,8 @@ export default function NewContractRequest() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center gap-4">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+      <motion.div variants={itemVariants} className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
@@ -51,9 +68,9 @@ export default function NewContractRequest() {
           <h1 className="text-3xl font-bold text-slate-100">Start Contract Workflow</h1>
           <p className="text-slate-400 mt-1">Kick off a new contract run by contract identifier</p>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="max-w-xl">
+      <motion.div variants={itemVariants} className="max-w-xl">
         <Card className="border-slate-800 bg-slate-950">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -87,7 +104,7 @@ export default function NewContractRequest() {
             </form>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

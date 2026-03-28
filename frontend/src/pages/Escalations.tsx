@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Check, X, UserPlus, Edit, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import * as api from '@/lib/api';
 
@@ -76,7 +76,12 @@ export default function Escalations() {
   }
 
   return (
-    <div className="space-y-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.3 }}
+      className="space-y-4"
+    >
       <div className="flex justify-end">
         <Button variant="ghost" size="sm" className="rounded-xl" onClick={load}>
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
@@ -96,27 +101,38 @@ export default function Escalations() {
         </TabsList>
 
         <TabsContent value="pending" className="mt-4 space-y-4">
-          {pending.length === 0 ? (
-            <div className="bg-card rounded-2xl border p-12 text-center">
-              <p className="text-muted-foreground text-sm">No pending escalations — all clear! 🎉</p>
-              <p className="text-xs text-muted-foreground mt-1">Escalations appear here when tasks become overdue</p>
-            </div>
-          ) : (
-            pending.map(esc => (
-              <EscalationCard
-                key={esc.id}
-                escalation={esc}
-                editing={editingId === esc.id}
-                onEdit={() => setEditingId(editingId === esc.id ? null : esc.id)}
-                onApprove={() => handleApprove(esc.id)}
-                onReject={() => handleReject(esc.id)}
-              />
-            ))
-          )}
+          <AnimatePresence>
+            {pending.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-card rounded-2xl border p-12 text-center"
+              >
+                <p className="text-muted-foreground text-sm">No pending escalations — all clear! 🎉</p>
+                <p className="text-xs text-muted-foreground mt-1">Escalations appear here when tasks become overdue</p>
+              </motion.div>
+            ) : (
+              pending.map(esc => (
+                <EscalationCard
+                  key={esc.id}
+                  escalation={esc}
+                  editing={editingId === esc.id}
+                  onEdit={() => setEditingId(editingId === esc.id ? null : esc.id)}
+                  onApprove={() => handleApprove(esc.id)}
+                  onReject={() => handleReject(esc.id)}
+                />
+              ))
+            )}
+          </AnimatePresence>
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <div className="bg-card rounded-2xl border overflow-hidden">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl border overflow-hidden"
+          >
             {history.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">No escalation history yet</div>
             ) : (
@@ -131,7 +147,12 @@ export default function Escalations() {
                 </thead>
                 <tbody>
                   {history.map(esc => (
-                    <tr key={esc.id} className="border-b border-border/50">
+                    <motion.tr 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      key={esc.id} 
+                      className="border-b border-border/50 hover:bg-muted/50 transition-colors"
+                    >
                       <td className="p-3 font-medium">{esc.task_title}</td>
                       <td className="p-3">{esc.owner}</td>
                       <td className="p-3 text-xs text-muted-foreground">
@@ -142,15 +163,15 @@ export default function Escalations() {
                           {esc.status}
                         </span>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
                 </tbody>
               </table>
             )}
-          </div>
+          </motion.div>
         </TabsContent>
       </Tabs>
-    </div>
+    </motion.div>
   );
 }
 
@@ -164,7 +185,13 @@ function EscalationCard({ escalation, editing, onEdit, onApprove, onReject }: {
   const [message, setMessage] = useState(escalation.message);
 
   return (
-    <motion.div layout className="bg-card rounded-2xl border p-5 space-y-4">
+    <motion.div 
+      layout 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.98, height: 0, marginBottom: 0, overflow: 'hidden' }}
+      className="bg-card rounded-2xl border p-5 space-y-4"
+    >
       <div className="flex items-start justify-between">
         <div>
           <h4 className="font-semibold">{escalation.task_title}</h4>

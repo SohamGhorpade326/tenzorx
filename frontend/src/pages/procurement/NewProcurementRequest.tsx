@@ -42,6 +42,23 @@ function formatCurrency(value: number): string {
   return value.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 24 }
+  }
+};
+
 export default function NewProcurementRequest() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -152,7 +169,7 @@ export default function NewProcurementRequest() {
   const total = quantity * unitPrice;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button

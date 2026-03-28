@@ -33,17 +33,26 @@ function MetricCard({ title, value, icon, color }: MetricCardProps) {
   };
 
   return (
-    <Card className="rounded-2xl border bg-card">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm text-muted-foreground font-medium">{title}</div>
-            <div className="text-3xl font-bold mt-2">{value}</div>
+    <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+      <Card className="rounded-2xl border bg-card hover:shadow-md transition-shadow">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-muted-foreground font-medium">{title}</div>
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                transition={{ type: 'spring', delay: 0.1 }}
+                className="text-3xl font-bold mt-2"
+              >
+                {value}
+              </motion.div>
+            </div>
+            <div className={`opacity-60 ${colorClasses[color]}`}>{icon}</div>
           </div>
-          <div className={`opacity-60 ${colorClasses[color]}`}>{icon}</div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -93,9 +102,27 @@ export default function ContractDashboard() {
     active: runs.filter((run) => run.status === 'running' || run.status === 'pending').length,
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div 
+      initial="hidden" 
+      animate="show" 
+      variants={containerVariants}
+      className="space-y-6"
+    >
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Contract Workflow Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Track contract drafting, approvals, signing and storage runs</p>
@@ -107,16 +134,16 @@ export default function ContractDashboard() {
           <Plus className="w-4 h-4" />
           New Contract Run
         </Button>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard title="Total Runs" value={stats.total} icon={<Activity className="w-8 h-8" />} color="blue" />
         <MetricCard title="Completed" value={stats.completed} icon={<CheckCircle2 className="w-8 h-8" />} color="green" />
         <MetricCard title="Failed" value={stats.failed} icon={<AlertCircle className="w-8 h-8" />} color="red" />
         <MetricCard title="Running/Pending" value={stats.active} icon={<Clock className="w-8 h-8" />} color="amber" />
-      </div>
+      </motion.div>
 
-      <div className="bg-card rounded-2xl border p-5">
+      <motion.div variants={itemVariants} className="bg-card rounded-2xl border p-5">
         <h3 className="font-semibold mb-4">Recent Contract Runs</h3>
         {loading ? (
           <div className="space-y-3">
@@ -141,10 +168,13 @@ export default function ContractDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {runs.map((run) => (
-                  <tr
+                {runs.map((run, i) => (
+                  <motion.tr
                     key={run.run_id}
-                    className="border-b border-border/50 hover:bg-muted/50 transition-colors"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
                   >
                     <td className="py-3 font-mono text-xs text-muted-foreground">{run.run_id}</td>
                     <td className="py-3">
@@ -162,13 +192,13 @@ export default function ContractDashboard() {
                         View
                       </Button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

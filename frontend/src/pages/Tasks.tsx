@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
 import { type TaskStatus } from '@/data/mockData';
 import { TaskStatusBadge, PriorityBadge } from '@/components/StatusBadge';
@@ -114,6 +115,19 @@ export default function Tasks() {
     load();
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const rowVariants = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0 }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -123,9 +137,13 @@ export default function Tasks() {
   }
 
   return (
-    <div className="space-y-4">
+    <motion.div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="flex flex-wrap items-center gap-3"
+      >
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36 rounded-xl"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
@@ -151,10 +169,15 @@ export default function Tasks() {
         <Button variant="outline" className="ml-auto rounded-xl text-warning border-warning/30 hover:bg-warning/10" onClick={() => setSimOpen(true)}>
           <Clock className="w-4 h-4 mr-1.5" /> Simulate Time Jump
         </Button>
-      </div>
+      </motion.div>
 
       {/* Tasks Table */}
-      <div className="bg-card rounded-2xl border overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+        className="bg-card rounded-2xl border overflow-hidden"
+      >
         {tasks.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-muted-foreground text-sm">No tasks yet — process a meeting to create tasks</p>
@@ -174,15 +197,19 @@ export default function Tasks() {
                   <th className="p-3 w-10"></th>
                 </tr>
               </thead>
-              <tbody>
-                {filtered.map(task => {
-                  const dl = getDeadlineText(task.deadline);
-                  return (
-                    <tr
-                      key={task.id}
-                      className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
-                      onClick={() => { setSelectedTask(task as unknown as ReturnType<typeof toFrontendTask>); setDrawerOpen(true); }}
-                    >
+              <motion.tbody variants={containerVariants} initial="hidden" animate="show">
+                <AnimatePresence>
+                  {filtered.map(task => {
+                    const dl = getDeadlineText(task.deadline);
+                    return (
+                      <motion.tr
+                        layout
+                        variants={rowVariants}
+                        exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                        key={task.id}
+                        className="border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
+                        onClick={() => { setSelectedTask(task as unknown as ReturnType<typeof toFrontendTask>); setDrawerOpen(true); }}
+                      >
                       <td className="p-3" onClick={e => e.stopPropagation()}>
                         <Checkbox checked={selected.has(task.id)} onCheckedChange={() => toggleSelect(task.id)} />
                       </td>
@@ -215,10 +242,11 @@ export default function Tasks() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
-              </tbody>
+                </AnimatePresence>
+              </motion.tbody>
             </table>
           </div>
         )}
@@ -226,18 +254,25 @@ export default function Tasks() {
         <div className="p-3 border-t flex items-center justify-between text-xs text-muted-foreground">
           <span>Showing 1-{filtered.length} of {filtered.length} tasks</span>
           {selected.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{selected.size} selected</span>
-              <Button size="sm" variant="outline" className="h-7 rounded-lg text-xs" onClick={markSelectedDone}>
-                <CheckSquare className="w-3 h-3 mr-1" /> Mark Done
-              </Button>
-            </div>
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="flex items-center gap-2"
+              >
+                <span className="font-medium">{selected.size} selected</span>
+                <Button size="sm" variant="outline" className="h-7 rounded-lg text-xs" onClick={markSelectedDone}>
+                  <CheckSquare className="w-3 h-3 mr-1" /> Mark Done
+                </Button>
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
-      </div>
+      </motion.div>
 
       <TaskDrawer task={selectedTask as Parameters<typeof TaskDrawer>[0]['task']} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <SimulationModal open={simOpen} onClose={() => setSimOpen(false)} onConfirm={() => { load(); }} />
-    </div>
+    </motion.div>
   );
 }
