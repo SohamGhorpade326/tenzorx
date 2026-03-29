@@ -3,7 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/context/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
+import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import ProcessMeeting from "@/pages/ProcessMeeting";
 import MeetingRoom from "@/pages/MeetingRoom";
@@ -33,12 +36,20 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
             <Route path="/" element={<Dashboard />} />
             <Route path="/meeting" element={<MeetingRoom />} />
             <Route path="/process" element={<ProcessMeeting />} />
@@ -65,11 +76,12 @@ const App = () => (
             <Route path="/contracts/new" element={<NewContractRequest />} />
             <Route path="/contracts/run/:runId" element={<ContractRunDetail />} />
             <Route path="/contracts/analytics" element={<ContractAnalytics />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

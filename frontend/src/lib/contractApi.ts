@@ -1,9 +1,9 @@
 /**
  * Contract Workflow API Client
- * All calls go to http://localhost:8003
+ * All calls go to http://localhost:8002
  */
 
-const BASE_URL = import.meta.env.VITE_CONTRACT_API_URL || 'http://localhost:8003';
+const BASE_URL = import.meta.env.VITE_CONTRACT_API_URL || 'http://localhost:8002';
 
 export interface StartContractRequest {
   contract_id: string;

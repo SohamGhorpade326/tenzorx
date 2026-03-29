@@ -30,7 +30,7 @@ VENDOR_WEIGHT_PREFERRED = 0.10
 
 # ── FastAPI ──────────────────────────────────────────────────────
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
-API_PORT = int(os.getenv("API_PORT", 8000))
+API_PORT = int(os.getenv("API_PORT", 8001))
 
 # ── Mock data paths ──────────────────────────────────────────────
 MOCK_DATA_DIR    = os.path.join(os.path.dirname(__file__), "mock_data")
