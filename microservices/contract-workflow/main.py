@@ -42,7 +42,7 @@ app.include_router(router)
 async def on_startup():
     print("[Startup] Initialising database...")
     init_db()
-    print("[Startup] Ready. Visit http://localhost:8003/docs")
+    print(f"[Startup] Ready. Visit http://localhost:{API_PORT}/docs")
 
 
 # ── Health check ──────────────────────────────────────────────────

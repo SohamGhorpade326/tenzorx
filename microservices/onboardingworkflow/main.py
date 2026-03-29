@@ -127,7 +127,7 @@ async def retry_step(body: RetryStepRequest):
 async def on_startup():
     print("[Startup] Initialising database...")
     init_db()
-    print("[Startup] Ready. Visit http://localhost:8002/docs")
+    print(f"[Startup] Ready. Visit http://localhost:{API_PORT}/docs")
 
 
 # ── Health check ──────────────────────────────────────────────────
