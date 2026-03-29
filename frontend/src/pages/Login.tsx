@@ -37,7 +37,7 @@ export default function Login() {
     ) {
       // Use auth context to login
       login(email);
-      navigate("/");
+      navigate("/dashboard");
     } else {
       setError("Invalid email or password. Use demo@workstream.io / demo123");
     }

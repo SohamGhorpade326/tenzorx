@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Login from "@/pages/Login";
+import Landing from "./pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import ProcessMeeting from "@/pages/ProcessMeeting";
 import MeetingRoom from "@/pages/MeetingRoom";
@@ -42,6 +43,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route
               element={
@@ -50,7 +52,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/meeting" element={<MeetingRoom />} />
             <Route path="/process" element={<ProcessMeeting />} />
             <Route path="/tasks" element={<Tasks />} />

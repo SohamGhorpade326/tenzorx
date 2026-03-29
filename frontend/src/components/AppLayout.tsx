@@ -12,7 +12,7 @@ const ThemeContext = createContext<{ dark: boolean; toggle: () => void }>({ dark
 export const useTheme = () => useContext(ThemeContext);
 
 const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { label: 'New Meeting', icon: Video, path: '/meeting', primary: true },
   { label: 'Process Meeting', icon: Upload, path: '/process' },
   { label: 'Tasks', icon: CheckSquare, path: '/tasks' },
@@ -41,7 +41,7 @@ const navItems = [
 ];
 
 const pageTitles: Record<string, string> = {
-  '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
   '/meeting': 'New Meeting',
   '/process': 'Process Meeting',
   '/tasks': 'Tasks',
