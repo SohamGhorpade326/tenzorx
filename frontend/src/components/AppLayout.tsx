@@ -1,11 +1,12 @@
 import { useState, createContext, useContext, useEffect } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Upload, CheckSquare, ScrollText, Bell, Settings,
-  Brain, Menu, X, Sun, Moon, Video, Package, Clock, BarChart3, Building2, CalendarDays, FileText
+  Brain, Menu, X, Sun, Moon, Video, Package, Clock, BarChart3, Building2, CalendarDays, FileText, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 
 const ThemeContext = createContext<{ dark: boolean; toggle: () => void }>({ dark: false, toggle: () => {} });
 export const useTheme = () => useContext(ThemeContext);
@@ -86,12 +87,19 @@ export default function AppLayout() {
   const [dark, setDark] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
 
   const toggle = () => setDark(d => !d);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <ThemeContext.Provider value={{ dark, toggle }}>
@@ -203,9 +211,19 @@ export default function AppLayout() {
               <button
                 onClick={toggle}
                 className="p-2 rounded-xl hover:bg-muted transition-colors"
+                title="Toggle dark mode"
               >
                 {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
+              <div className="w-px h-6 bg-border" />
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-xl hover:bg-muted transition-colors text-red-500 hover:text-red-600"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+              <span className="hidden sm:block text-xs text-muted-foreground ml-1">{user?.email.split('@')[0]}</span>
             </div>
           </header>
 

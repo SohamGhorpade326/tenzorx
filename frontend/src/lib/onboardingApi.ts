@@ -1,9 +1,9 @@
 /**
  * Onboarding AI API Client
- * All calls go to http://localhost:8002
+ * All calls go to http://localhost:8003
  */
 
-const BASE_URL = import.meta.env.VITE_ONBOARDING_API_URL || 'http://localhost:8002';
+const BASE_URL = import.meta.env.VITE_ONBOARDING_API_URL || 'http://localhost:8003';
 
 // ── Type Definitions ────────────────────────────────────────────────
 
