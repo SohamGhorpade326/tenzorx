@@ -2,10 +2,10 @@
 Procurement AI — FastAPI entry point.
 
 Start with:
-    uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    uvicorn main:app --reload --host 0.0.0.0 --port 8001
 
-Swagger UI: http://localhost:8000/docs
-ReDoc     : http://localhost:8000/redoc
+Swagger UI: http://localhost:8001/docs
+ReDoc     : http://localhost:8001/redoc
 """
 import os
 import sys
@@ -99,7 +99,7 @@ async def on_startup():
     else:
         print("[Startup] Mock data already present, skipping seed.")
 
-    print("[Startup] Ready. Visit http://localhost:8000/docs")
+    print("[Startup] Ready. Visit http://localhost:{}/docs".format(API_PORT))
 
 
 # ── Health check ──────────────────────────────────────────────────
