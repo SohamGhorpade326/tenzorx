@@ -124,6 +124,30 @@ Frontend runs at: **http://localhost:5173**
 
 ## Running Everything
 
+### Option 1: Docker Compose (Recommended) 🐳
+
+All backend services run in one command:
+
+```bash
+docker-compose up
+```
+
+In a separate terminal, start the frontend:
+```bash
+cd frontend
+npm run dev
+```
+
+That's it! All 6 backend services are running. See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for complete Docker documentation.
+
+**Benefits:**
+- ✅ One command starts everything (no 7 terminal windows)
+- ✅ Same environment on all team members' machines
+- ✅ No manual Python venv setup
+- ✅ Services run in isolation with proper networking
+
+### Option 2: Manual Setup (Traditional)
+
 Open **two terminals**:
 
 **Terminal 1 — Backend:**
