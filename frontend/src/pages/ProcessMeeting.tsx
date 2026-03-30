@@ -9,7 +9,7 @@ import {
   Bell, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import * as api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -47,6 +47,8 @@ export default function ProcessMeeting() {
   const [tasksCreated, setTasksCreated] = useState(0);
   const [meetingSummary, setMeetingSummary] = useState('');
   const wsRef = useRef<WebSocket | null>(null);
+  const attachedRunRef = useRef<string | null>(null);
+  const location = useLocation();
   const navigate = useNavigate();
 
   const getSteps = (): AgentStep[] => {
@@ -131,6 +133,27 @@ export default function ProcessMeeting() {
   useEffect(() => {
     return () => { wsRef.current?.close(); };
   }, []);
+
+  // If user came from Meeting Room, attach to that live run.
+  useEffect(() => {
+    const navState = location.state as { runId?: string; fromMeeting?: boolean } | null;
+    const incomingRunId = navState?.runId?.trim();
+    if (!incomingRunId || attachedRunRef.current === incomingRunId) return;
+
+    attachedRunRef.current = incomingRunId;
+    setRunId(incomingRunId);
+    setProcessing(true);
+    setCompleted(false);
+    setCurrentStep(0);
+    setStepStatuses({});
+    setTasksCreated(0);
+    setMeetingSummary('');
+    connectWebSocket(incomingRunId);
+
+    if (navState?.fromMeeting) {
+      toast.success('Meeting ended. Showing live pipeline and summary updates.');
+    }
+  }, [location.state, connectWebSocket]);
 
   const handleProcess = async () => {
     if (!transcript.trim()) {
