@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Video, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import * as api from '@/lib/api';
 
 export default function MeetingRoom() {
+  const navigate = useNavigate();
   const [roomName, setRoomName] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [runId, setRunId] = useState('');
   const [pipelineUpdates, setPipelineUpdates] = useState<string[]>([]);
+  const [title, setTitle] = useState('Team Meeting');
+  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [attendees, setAttendees] = useState('');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -105,6 +111,7 @@ export default function MeetingRoom() {
       }
 
       stopMediaTracks();
+      setRoomName(null);
 
       if (audioChunksRef.current.length === 0) {
         toast.error('No audio captured. Please try again.');
@@ -114,6 +121,9 @@ export default function MeetingRoom() {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       const formData = new FormData();
       formData.append('audio', audioBlob, 'meeting.webm');
+      formData.append('title', title || 'Untitled Meeting');
+      if (date) formData.append('date', date);
+      if (attendees.trim()) formData.append('attendees', attendees.trim());
 
       appendPipelineUpdate('• Uploading meeting audio...');
       const result = await api.processAudio(formData);
@@ -122,6 +132,7 @@ export default function MeetingRoom() {
       appendPipelineUpdate(`✓ Audio uploaded. Run started: ${result.run_id}`);
       connectPipelineSocket(result.run_id);
       toast.success('Audio uploaded. Pipeline started.');
+      navigate('/process', { state: { runId: result.run_id, fromMeeting: true } });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to process meeting audio';
       toast.error(message);
@@ -184,6 +195,72 @@ export default function MeetingRoom() {
               >
                 {/* Pulse recording effect */}
                 <motion.div 
+                  initial={{ opacity: 0.5, scale: 1 }}
+                  animate={{ opacity: [0.5, 0, 0.5], scale: [1, 1.5, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="absolute inset-0 bg-white/20 rounded-xl"
+                />
+                <span className="relative flex items-center">
+                  {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Square className="w-4 h-4 mr-2 fill-white" />}
+                  End Meeting & Process
+                </span>
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+          <Input
+            placeholder="Meeting title"
+            className="rounded-xl"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <Input
+            type="date"
+            className="rounded-xl"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+          <Input
+            placeholder="Attendees (comma-separated)"
+            className="rounded-xl"
+            value={attendees}
+            onChange={(e) => setAttendees(e.target.value)}
+          />
+        </div>
+
+        <AnimatePresence mode="wait">
+          {!isRecording ? (
+            <motion.div
+              key="start"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                onClick={startMeeting}
+                disabled={isUploading}
+                className="mt-4 h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <Video className="w-4 h-4 mr-2" />
+                Start Meeting
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="end"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                onClick={endMeetingAndProcess}
+                disabled={isUploading}
+                className="mt-4 h-11 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white relative overflow-hidden group"
+              >
+                <motion.div
                   initial={{ opacity: 0.5, scale: 1 }}
                   animate={{ opacity: [0.5, 0, 0.5], scale: [1, 1.5, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}

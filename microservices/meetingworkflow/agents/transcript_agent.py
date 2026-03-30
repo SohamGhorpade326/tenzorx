@@ -21,7 +21,7 @@ from typing import List, Optional
 from langchain_groq import ChatGroq
 from langchain.schema import HumanMessage, SystemMessage
 
-from config import GROQ_API_KEY, GROQ_MODEL, WHISPER_MODEL_SIZE, DEMO_MODE
+from config import GROQ_API_KEY, GROQ_MODEL, WHISPER_MODEL_SIZE, WHISPER_LANGUAGE, DEMO_MODE
 from models.schemas import Decision, AuditEvent, AuditStatus
 from db.db import insert_audit_event, update_meeting_transcript
 
@@ -59,7 +59,7 @@ def run(
 
     # Step 1: Transcribe audio if provided
     if audio_file_path and not transcript:
-        transcript = _transcribe_audio(audio_file_path, run_id)
+        transcript = _transcribe_audio(audio_file_path, run_id, attendees=attendees)
 
     if not transcript.strip():
         _log(agent_name, "EXTRACT_DECISIONS", AuditStatus.FAILED,
@@ -86,14 +86,31 @@ def run(
     return (decisions, transcript) if return_transcript else decisions
 
 
-def _transcribe_audio(audio_path: str, run_id: Optional[str]) -> str:
+def _transcribe_audio(audio_path: str, run_id: Optional[str], attendees: Optional[List[str]] = None) -> str:
     """Run Whisper locally to transcribe audio file."""
     start = time.time()
     try:
         import whisper
         print(f"[TranscriptAgent] Loading Whisper model ({WHISPER_MODEL_SIZE})...")
         model = whisper.load_model(WHISPER_MODEL_SIZE)
-        result = model.transcribe(audio_path)
+        names = ", ".join([n for n in (attendees or []) if n][:12])
+        prompt = (
+            "Meeting transcript. Preserve participant names and action items accurately. "
+            f"Participant names: {names}."
+            if names
+            else "Meeting transcript. Preserve names, owners, and task statements accurately."
+        )
+
+        result = model.transcribe(
+            audio_path,
+            language=WHISPER_LANGUAGE,
+            temperature=0,
+            best_of=3,
+            beam_size=5,
+            condition_on_previous_text=True,
+            fp16=False,
+            initial_prompt=prompt,
+        )
         transcript = result["text"]
         elapsed_ms = int((time.time() - start) * 1000)
         _log(

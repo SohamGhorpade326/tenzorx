@@ -19,6 +19,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 # Whisper
 WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
+WHISPER_LANGUAGE = os.getenv("WHISPER_LANGUAGE", "").strip() or None
 
 # SMTP (optional, for real escalation emails)
 SMTP_HOST = os.getenv("SMTP_HOST", "")
