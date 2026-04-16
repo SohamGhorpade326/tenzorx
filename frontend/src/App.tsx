@@ -32,6 +32,15 @@ import ContractDashboard from "@/pages/contract/ContractDashboard";
 import NewContractRequest from "@/pages/contract/NewContractRequest";
 import ContractRunDetail from "@/pages/contract/ContractRunDetail";
 import ContractAnalytics from "@/pages/contract/ContractAnalytics";
+import VideoOnboardingMeeting from "@/pages/VideoOnboardingMeeting";
+import VideoOnboardingRecords from "@/pages/VideoOnboardingRecords";
+import VideoOnboardingReview from "@/pages/VideoOnboardingReview";
+import QuestionBuilder from "@/pages/QuestionBuilder";
+import QuestionSetEditor from "@/pages/QuestionSetEditor";
+import OnboardingForm from "@/pages/OnboardingForm";
+import VerificationPage from "@/pages/VerificationPage";
+import InstructionsPage from "@/pages/InstructionsPage";
+import ThankYouPage from "@/pages/ThankYouPage";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +54,19 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            {/* Video Onboarding Routes (Public - Multi-Step Flow) */}
+            <Route path="/video/onboarding" element={<OnboardingForm />} />
+            <Route path="/video/verification" element={<VerificationPage />} />
+            <Route path="/video/instructions" element={<InstructionsPage />} />
+            <Route path="/video/meet/:sessionId" element={<VideoOnboardingMeeting />} />
+            <Route path="/video/thank-you" element={<ThankYouPage />} />
+            {/* Video Onboarding HR Routes */}
+            <Route path="/video/records" element={<VideoOnboardingRecords />} />
+            <Route path="/video/review/:sessionId" element={<VideoOnboardingReview />} />
+            {/* Question Builder Routes */}
+            <Route path="/video/builder" element={<QuestionBuilder />} />
+            <Route path="/video/builder/create" element={<QuestionSetEditor />} />
+            <Route path="/video/builder/edit/:setId" element={<QuestionSetEditor />} />
             <Route
               element={
                 <ProtectedRoute>
