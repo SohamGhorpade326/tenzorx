@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Upload, CheckSquare, ScrollText, Bell, Settings,
-  Brain, Menu, X, Sun, Moon, Video, Package, Clock, BarChart3, Building2, CalendarDays, FileText, LogOut
+  Brain, Menu, X, Sun, Moon, Video, Package, Clock, BarChart3, Building2, CalendarDays, FileText, LogOut, Edit3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -20,6 +20,11 @@ const navItems = [
   { label: 'Escalations', icon: Bell, path: '/escalations' },
   { label: 'Calendar', icon: CalendarDays, path: '/calendar' },
   { label: 'Settings', icon: Settings, path: '/settings' },
+  // Video Onboarding section
+  { label: 'Video Onboarding', icon: Video, path: '/video/onboarding', section: true },
+  { label: 'Start Interview', icon: Upload, path: '/video/onboarding', primary: true },
+  { label: 'Interview Records', icon: ScrollText, path: '/video/records' },
+  { label: 'Question Builder', icon: Edit3, path: '/video/builder' },
   // Procurement section
   { label: 'Procurement', icon: Package, path: '/procurement', section: true },
   { label: 'Dashboard', icon: LayoutDashboard, path: '/procurement'},
@@ -49,6 +54,10 @@ const pageTitles: Record<string, string> = {
   '/escalations': 'Escalations',
   '/calendar': 'Calendar',
   '/settings': 'Settings',
+  '/video/onboarding': 'Video Onboarding Interview',
+  '/video/records': 'Interview Records',
+  '/video/builder': 'Question Builder',
+  '/video/thank-you': 'Thank You',
   '/procurement': 'Procurement Dashboard',
   '/procurement/new': 'New Purchase Request',
   '/procurement/analytics': 'Analytics Dashboard',
@@ -66,6 +75,10 @@ const pageTitles: Record<string, string> = {
 function getPageTitle(pathname: string): string {
   if (pageTitles[pathname]) {
     return pageTitles[pathname];
+  }
+
+  if (pathname.startsWith('/video/interview/')) {
+    return 'Video Onboarding Interview';
   }
 
   if (pathname.startsWith('/procurement/run/')) {
