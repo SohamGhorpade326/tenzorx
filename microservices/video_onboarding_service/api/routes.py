@@ -38,6 +38,7 @@ from db.db import (
     save_verification_photo,
     save_verification_signature,
     get_verification_data,
+    delete_video_session,
 )
 
 router = APIRouter(prefix="/api/video-onboarding", tags=["video_onboarding"])
@@ -554,6 +555,26 @@ async def check_review_ready(session_id: str):
         "progress": session["progress"],
         "total_answers": session["questions_answered"],
         "total_questions": len(session["answers"]),
+    }
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a video session and all associated data."""
+    # Check if session exists first
+    session = get_video_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    
+    # Delete the session
+    success = delete_video_session(session_id)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete session")
+    
+    return {
+        "success": True,
+        "message": f"Session {session_id} deleted successfully"
     }
 
 

@@ -2,123 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Volume2, VolumeX, Mic, MicOff, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as api from '@/lib/video-api';
-import {
-  extractFinancialData,
-  validateConsent,
-  calculateRiskLevel,
-  generateLoanOffer,
-  type LoanOffer,
-} from '@/lib/risk-engine';
 
 interface Question {
   question_id: number;
   question_text: string;
-  question_type: 'audio' | 'document_upload' | 'yes_no' | 'consent';
+  question_type: string;
   category: string;
   required: boolean;
   timer_seconds: number;
   document_type?: string;
 }
-
-// 🏦 LOAN ORIGINATION QUESTIONS (11 Questions)
-const LOAN_QUESTIONS: Question[] = [
-  {
-    question_id: 1,
-    question_text: 'Upload your Aadhar Card (Front & Back)',
-    question_type: 'document_upload',
-    category: 'Identity',
-    required: true,
-    timer_seconds: 120,
-    document_type: 'aadhar',
-  },
-  {
-    question_id: 2,
-    question_text: 'Upload your PAN Card',
-    question_type: 'document_upload',
-    category: 'Identity',
-    required: true,
-    timer_seconds: 120,
-    document_type: 'pan',
-  },
-  {
-    question_id: 3,
-    question_text: 'Upload your Salary Slip (Latest 3 months)',
-    question_type: 'document_upload',
-    category: 'Financial',
-    required: true,
-    timer_seconds: 120,
-    document_type: 'salary_slip',
-  },
-  {
-    question_id: 4,
-    question_text: 'Please confirm your full name and date of birth',
-    question_type: 'audio',
-    category: 'Personal',
-    required: true,
-    timer_seconds: 60,
-  },
-  {
-    question_id: 5,
-    question_text: 'What is your current occupation?',
-    question_type: 'audio',
-    category: 'Employment',
-    required: true,
-    timer_seconds: 60,
-  },
-  {
-    question_id: 6,
-    question_text: 'What is your approximate monthly income?',
-    question_type: 'audio',
-    category: 'Financial',
-    required: true,
-    timer_seconds: 90,
-  },
-  {
-    question_id: 7,
-    question_text: 'What is the primary purpose of this loan?',
-    question_type: 'audio',
-    category: 'Financial',
-    required: true,
-    timer_seconds: 90,
-  },
-  {
-    question_id: 8,
-    question_text: 'Please confirm your current address',
-    question_type: 'audio',
-    category: 'Personal',
-    required: true,
-    timer_seconds: 60,
-  },
-  {
-    question_id: 9,
-    question_text: 'Are you currently servicing any existing loans?',
-    question_type: 'yes_no',
-    category: 'Financial',
-    required: true,
-    timer_seconds: 60,
-  },
-  {
-    question_id: 10,
-    question_text: 'Do you consent to share your financial data for loan processing?',
-    question_type: 'yes_no',
-    category: 'Consent',
-    required: true,
-    timer_seconds: 60,
-  },
-  {
-    question_id: 11,
-    question_text:
-      'Please read aloud: "I confirm that all information provided is accurate and complete. I consent to this loan application and authorize the processing of my personal and financial data."',
-    question_type: 'consent',
-    category: 'Consent',
-    required: true,
-    timer_seconds: 120,
-  },
-];
 
 export default function VideoOnboardingMeeting() {
   const { sessionId } = useParams();
@@ -126,19 +23,9 @@ export default function VideoOnboardingMeeting() {
   
   // Session & Questions
   const [session, setSession] = useState<any>(null);
-  const [questions, setQuestions] = useState<Question[]>(LOAN_QUESTIONS);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  
-  // 🏦 Loan Origination Data
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [faceSnapshot, setFaceSnapshot] = useState<string | null>(null);
-  const [transcripts, setTranscripts] = useState<string[]>([]);
-  const [yesNoAnswers, setYesNoAnswers] = useState<{ [key: number]: boolean }>({});
-  const [consentCheckbox, setConsentCheckbox] = useState(false);
-  const [consentTranscript, setConsentTranscript] = useState('');
-  const [documentsUploaded, setDocumentsUploaded] = useState<string[]>([]);
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
   
   // Meeting & Audio
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
@@ -648,7 +535,7 @@ export default function VideoOnboardingMeeting() {
         console.log('✅ INTERVIEW COMPLETE');
         setIsUploading(true);
         await api.submitVideoOnboardingForHR(sessionId!);
-        navigate('/video/thank-you');
+        navigate(`/video/loan-result/${sessionId}`);
       }
     } catch (err: any) {
       console.error('❌ [handleNextQuestion] CAUGHT ERROR:', err);
@@ -715,50 +602,11 @@ export default function VideoOnboardingMeeting() {
   }
 
   return (
-    <>
-      {/* Recording Indicator - Top Right - HIGHEST LAYER */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 99999,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          border: '2px solid #ef4444',
-          backdropFilter: 'blur(4px)'
-        }}
-      >
-        <div
-          style={{
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#ef4444',
-            borderRadius: '50%',
-            animation: 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-          }}
-        />
-        <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#fca5a5', letterSpacing: '1px' }}>
-          ● REC
-        </span>
-      </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen bg-gray-900 text-white relative"
-      >
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gray-900 text-white relative"
+    >
       {/* Camera Feed - Full Screen Background */}
       <div
         ref={jitsiContainerRef}
@@ -967,7 +815,6 @@ export default function VideoOnboardingMeeting() {
           Exit
         </Button>
       </motion.div>
-      </motion.div>
-    </>
+    </motion.div>
   );
 }

@@ -26,23 +26,9 @@ const navItems = [
   { label: 'Interview Records', icon: ScrollText, path: '/video/records' },
   { label: 'Question Builder', icon: Edit3, path: '/video/builder' },
   // Procurement section
-  { label: 'Procurement', icon: Package, path: '/procurement', section: true },
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/procurement'},
-  { label: 'New Request', icon: Upload, path: '/procurement/new' },
-  { label: 'Analytics', icon: BarChart3, path: '/procurement/analytics' },
-  { label: 'Vendors', icon: Building2, path: '/procurement/vendors' },
-  { label: 'Review Queue', icon: Clock, path: '/procurement/reviews' },
-  { label: 'Audit Log', icon: ScrollText, path: '/procurement/audit' },
-  // Onboarding section
-  { label: 'Onboarding', icon: CheckSquare, path: '/onboarding', section: true },
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/onboarding' },
-  { label: 'New Hire', icon: Upload, path: '/onboarding/new' },
-  { label: 'Analytics', icon: BarChart3, path: '/onboarding/analytics' },
-  // Contract workflow section
-  { label: 'Contract Workflow', icon: FileText, path: '/contracts', section: true },
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/contracts' },
-  { label: 'New Contract Run', icon: Upload, path: '/contracts/new' },
-  { label: 'Analytics', icon: BarChart3, path: '/contracts/analytics' },
+  
+ 
+  
 ];
 
 const pageTitles: Record<string, string> = {
