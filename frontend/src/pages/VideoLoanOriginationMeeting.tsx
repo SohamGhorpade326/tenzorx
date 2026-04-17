@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Volume2, VolumeX, Mic, MicOff, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Volume2, Mic, MicOff, CheckCircle2, MapPin, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as api from '@/lib/video-api';
@@ -120,16 +119,16 @@ const LOAN_QUESTIONS: Question[] = [
   },
 ];
 
-export default function VideoOnboardingMeeting() {
+export default function VideoLoanOriginationMeeting() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  
+
   // Session & Questions
   const [session, setSession] = useState<any>(null);
   const [questions, setQuestions] = useState<Question[]>(LOAN_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  
+
   // 🏦 Loan Origination Data
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [faceSnapshot, setFaceSnapshot] = useState<string | null>(null);
@@ -138,21 +137,22 @@ export default function VideoOnboardingMeeting() {
   const [consentCheckbox, setConsentCheckbox] = useState(false);
   const [consentTranscript, setConsentTranscript] = useState('');
   const [documentsUploaded, setDocumentsUploaded] = useState<string[]>([]);
-  const videoElementRef = useRef<HTMLVideoElement | null>(null);
-  
+  const [verificationTags, setVerificationTags] = useState<string[]>([]);
+
   // Meeting & Audio
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // 🎙️ Voice Activity Detection (VAD) - Sound Level Analysis
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserNodeRef = useRef<AnalyserNode | null>(null);
   const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSoundTimeRef = useRef<number>(0);
   const soundDetectedRef = useRef<boolean>(false);
-  
+
   // Timer & Recording
   const [timeRemaining, setTimeRemaining] = useState(240);
   const [isRecording, setIsRecording] = useState(false);
@@ -160,25 +160,44 @@ export default function VideoOnboardingMeeting() {
   const [isUploading, setIsUploading] = useState(false);
   const [textAnswer, setTextAnswer] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
+  const [yesNoAnswer, setYesNoAnswer] = useState<boolean | null>(null);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
-  
+
   // Initialize
   useEffect(() => {
     if (!sessionId) return;
     initializeMeeting();
   }, [sessionId]);
 
-  // � Initialize camera feed
+  // 🏦 Capture Geolocation on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const loc = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setLocation(loc);
+          setVerificationTags((prev) => [...prev, '📍 Location']);
+          console.log('📍 Location captured:', loc);
+          toast.success('📍 Location Verified');
+        },
+        (error) => {
+          console.warn('⚠️ Geolocation not available:', error);
+        }
+      );
+    }
+  }, []);
+
+  // 📸 Initialize camera feed & capture face snapshot
   useEffect(() => {
     const initCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            height: { ideal: 720 },
-            width: { ideal: 1280 }
-          },
-          audio: false // We'll capture audio separately with recording
+          video: { height: { ideal: 720 }, width: { ideal: 1280 } },
+          audio: false,
         });
 
         if (jitsiContainerRef.current) {
@@ -194,9 +213,15 @@ export default function VideoOnboardingMeeting() {
           video.style.top = '0';
           video.style.left = '0';
           video.style.zIndex = '1';
-          
+
+          videoElementRef.current = video;
           jitsiContainerRef.current.appendChild(video);
-          console.log('🎥 Camera initialized - video element added');
+          console.log('🎥 Camera initialized');
+
+          // 📸 Capture face snapshot after 1 second
+          setTimeout(() => {
+            captureFaceSnapshot(video);
+          }, 1000);
         }
       } catch (err) {
         console.error('❌ Camera access failed:', err);
@@ -207,26 +232,47 @@ export default function VideoOnboardingMeeting() {
     initCamera();
   }, []);
 
+  /**
+   * 📸 Capture single frame from video stream
+   */
+  const captureFaceSnapshot = (video: HTMLVideoElement) => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg');
+        setFaceSnapshot(imageData);
+        setVerificationTags((prev) => [...prev, '📸 Snapshot']);
+        console.log('📸 Face snapshot captured');
+        toast.success('📸 Identity Snapshot Captured');
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not capture face snapshot:', err);
+    }
+  };
+
   const initializeMeeting = async () => {
     try {
-      // Fetch session and questions
       const [sessionData, questionsData] = await Promise.all([
         api.getVideoSession(sessionId!),
-        api.getVideoOnboardingQuestions(),
+        Promise.resolve({ questions: LOAN_QUESTIONS }),
       ]);
 
       setSession(sessionData);
-      setQuestions(questionsData.questions);
-      
+      setQuestions(LOAN_QUESTIONS);
+
       // Start interview
       await api.startVideoOnboarding(sessionId!);
-      
+
       // Auto-start questions after camera is ready
       setTimeout(() => {
         startQuestionTimer();
         speakQuestion();
       }, 1000);
-      
+
       setLoading(false);
     } catch (err: any) {
       toast.error(err.message);
@@ -257,8 +303,6 @@ export default function VideoOnboardingMeeting() {
   };
 
   const speakQuestion = (questionToSpeak?: Question) => {
-    // Use Web Speech API for TTS
-    // If question not provided, use current question
     const question = questionToSpeak || currentQuestion;
     if (!question) return;
 
@@ -268,8 +312,10 @@ export default function VideoOnboardingMeeting() {
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => {
       setIsSpeaking(false);
-      // Start recording after AI finishes speaking
-      startRecording();
+      // Auto-start recording for audio questions
+      if (question.question_type === 'audio' || question.question_type === 'consent') {
+        startRecording();
+      }
     };
 
     speechSynthesisRef.current = utterance;
@@ -277,7 +323,6 @@ export default function VideoOnboardingMeeting() {
     speechSynthesis.speak(utterance);
   };
 
-  // 🎙️ VOICE ACTIVITY DETECTION (VAD) - Detect sound levels
   const detectSoundLevel = (): { hasSpeech: boolean; level: number } => {
     if (!analyserNodeRef.current) {
       return { hasSpeech: false, level: 0 };
@@ -286,11 +331,9 @@ export default function VideoOnboardingMeeting() {
     const dataArray = new Uint8Array(analyserNodeRef.current.frequencyBinCount);
     analyserNodeRef.current.getByteFrequencyData(dataArray);
 
-    // Calculate average frequency magnitude
     const sum = dataArray.reduce((a, b) => a + b, 0);
     const average = sum / dataArray.length;
 
-    // Speech threshold: if average > 20, we have speech
     const SOUND_THRESHOLD = 20;
     const hasSpeech = average > SOUND_THRESHOLD;
 
@@ -299,53 +342,37 @@ export default function VideoOnboardingMeeting() {
 
   const startRecording = async () => {
     try {
-      // 🔥 PREVENT OVERLAPPING RECORDINGS
       if (isRecording || mediaRecorderRef.current?.state === 'recording') {
-        console.warn('⚠️ Recording already in progress, skipping startRecording');
+        console.warn('⚠️ Recording already in progress');
         return;
       }
 
-      console.log('🎙️ [START RECORDING] Requesting microphone...');
-      
-      // 🔥 REQUEST MICROPHONE
-      console.log('🎙️ Requesting microphone access...');
+      console.log('🎙️ Requesting microphone...');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      console.log('✅ Microphone accessed:', stream);
-      console.log('🎤 Stream tracks:', stream.getTracks());
-      
+
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      
+
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
-      // 🎙️ SET UP AUDIO ANALYSIS FOR VOICE ACTIVITY DETECTION
       try {
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         audioContextRef.current = audioContext;
-        
+
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
-        
+
         analyserNodeRef.current = analyser;
-        console.log('🎵 Audio analyser ready for voice detection');
+        console.log('🎵 Audio analyser ready');
       } catch (err) {
-        console.warn('⚠️ Audio analysis not available (VAD disabled):', err);
+        console.warn('⚠️ Audio analysis not available:', err);
       }
 
-      // 🔥 DEBUG: Log ondataavailable events
       mediaRecorder.ondataavailable = (event) => {
-        console.log('📊 ondataavailable fired!', {
-          size: event.data.size,
-          type: event.data.type,
-          totalChunks: audioChunksRef.current.length + 1
-        });
-        
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-          console.log(`📦 Audio chunk added. Total: ${audioChunksRef.current.length}, Size: ${event.data.size} bytes`);
         }
       };
 
@@ -353,60 +380,40 @@ export default function VideoOnboardingMeeting() {
         console.log('✅ Recording started');
         setIsRecording(true);
       };
-      
+
       mediaRecorder.onstop = () => {
         console.log('⏹️ Recording stopped');
-        console.log(`📦 Total chunks collected: ${audioChunksRef.current.length}`);
-        console.log(`📊 Total size: ${audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)} bytes`);
         setIsRecording(false);
       };
 
-      mediaRecorder.onerror = (event) => {
-        console.error('❌ MediaRecorder error:', event.error);
-      };
-
       mediaRecorder.start();
-      console.log('🎬 MediaRecorder started');
-      
-      // 🔥 SMART CHUNK COLLECTION WITH VOICE ACTIVITY DETECTION
-      // Only collect chunks when someone is speaking, stop after 3 seconds of silence
+
       lastSoundTimeRef.current = Date.now();
-      const SILENCE_TIMEOUT = 3000; // Stop collecting after 3 seconds of silence
-      
+      const SILENCE_TIMEOUT = 3000;
+
       const requestDataInterval = setInterval(() => {
         if (mediaRecorder.state === 'recording') {
-          const { hasSpeech, level } = detectSoundLevel();
-          
+          const { hasSpeech } = detectSoundLevel();
+
           if (hasSpeech) {
-            // Sound detected: collect chunk
             lastSoundTimeRef.current = Date.now();
-            if (!soundDetectedRef.current) {
-              console.log(`🔊 Speech detected! Starting chunk collection (level: ${level.toFixed(1)})`);
-              soundDetectedRef.current = true;
-            }
+            soundDetectedRef.current = true;
             mediaRecorder.requestData();
-            
-            // Clear any pending silence timeout
+
             if (silenceTimeoutRef.current) {
               clearTimeout(silenceTimeoutRef.current);
               silenceTimeoutRef.current = null;
             }
           } else if (soundDetectedRef.current) {
-            // Silence detected after speech
             const timeSinceSpeech = Date.now() - lastSoundTimeRef.current;
-            
+
             if (timeSinceSpeech > SILENCE_TIMEOUT) {
-              // Extended silence: stop collecting
-              console.log(`🔇 Silence timeout (${timeSinceSpeech}ms) - stopping chunk collection`);
               soundDetectedRef.current = false;
             } else {
-              // Short silence: still collect (might be between words)
               mediaRecorder.requestData();
-              
-              // Set timeout to eventually stop
+
               if (!silenceTimeoutRef.current) {
                 silenceTimeoutRef.current = setTimeout(() => {
-                  console.log(`🔇 Extended silence detected - stopping chunk collection`);
                   soundDetectedRef.current = false;
                   silenceTimeoutRef.current = null;
                 }, SILENCE_TIMEOUT - timeSinceSpeech);
@@ -414,157 +421,161 @@ export default function VideoOnboardingMeeting() {
             }
           }
         }
-      }, 100); // Check sound level 10 times per second
-      
-      // Store interval ref to clear later
+      }, 100);
+
       (mediaRecorderRef.current as any).requestDataInterval = requestDataInterval;
-      
     } catch (err) {
       console.error('❌ Recording error:', err);
-      toast.error('Failed to access microphone. Please check permissions.');
+      toast.error('Failed to access microphone.');
     }
   };
 
   const stopRecording = (): Blob | null => {
-    console.log('🛑 [STOP RECORDING] Called');
-    console.log('   mediaRecorderRef.current:', !!mediaRecorderRef.current);
-    console.log('   isRecording state:', isRecording);
-    
     if (!mediaRecorderRef.current || !isRecording) {
-      console.error('❌ NO ACTIVE RECORDING - returning null');
-      console.error('   mediaRecorderRef.current:', !!mediaRecorderRef.current);
-      console.error('   isRecording:', isRecording);
       return null;
     }
 
     const mediaRecorder = mediaRecorderRef.current;
-    console.log('✅ Have active recording, proceeding to stop...');
 
-    // 🔥 CLEAR the requestData interval FIRST (CRITICAL!)
     if ((mediaRecorder as any).requestDataInterval) {
       clearInterval((mediaRecorder as any).requestDataInterval);
       (mediaRecorder as any).requestDataInterval = null;
-      console.log('✅ Cleared and nullified requestData interval');
     }
 
-    // 🎙️ CLEAN UP AUDIO ANALYSIS RESOURCES
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
       silenceTimeoutRef.current = null;
-      console.log('✅ Cleared silence timeout');
     }
 
     if (audioContextRef.current) {
       audioContextRef.current.close();
       audioContextRef.current = null;
-      console.log('✅ Closed audio context');
     }
 
     analyserNodeRef.current = null;
     soundDetectedRef.current = false;
     lastSoundTimeRef.current = 0;
 
-    // 🔥 REQUEST FINAL DATA BEFORE STOPPING
-    console.log('📞 Final requestData call...');
     mediaRecorder.requestData();
 
-    // Now stop
     if (mediaRecorder.state === 'recording') {
-      console.log('⏹️ Stopping recorder (state: recording)');
       mediaRecorder.stop();
-    } else {
-      console.warn('⚠️ Recorder state is not "recording":', mediaRecorder.state);
     }
 
-    // Stop all tracks
-    console.log('🛑 Stopping audio tracks...');
     mediaRecorder.stream.getTracks().forEach((track) => {
-      console.log('   Stopping track:', track.label, 'ready state:', track.readyState);
       track.stop();
     });
 
-    // 🔥 DEBUG: Check what we collected
-    const totalSize = audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0);
-    console.log('📊 CHUNK COLLECTION REPORT:');
-    console.log(`   Total chunks: ${audioChunksRef.current.length}`);
-    console.log(`   Total size: ${totalSize} bytes`);
-    if (audioChunksRef.current.length > 0) {
-      console.log(`   First chunk: ${audioChunksRef.current[0].size} bytes`);
-      console.log(`   Last chunk: ${audioChunksRef.current[audioChunksRef.current.length - 1].size} bytes`);
-    }
-
     if (audioChunksRef.current.length === 0) {
-      console.error('❌ CRITICAL: NO AUDIO CHUNKS COLLECTED!');
       return null;
     }
 
     const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-    console.log(`✅ BLOB CREATED: ${blob.size} bytes, type: ${blob.type}`);
 
-    if (blob.size < 1000) {
-      console.warn(`⚠️ WARNING: Blob is very small (${blob.size} bytes)`);
-    }
-
-    // 🔥 RESET REFS FOR NEXT RECORDING SESSION
-    console.log('🔄 Resetting refs for next recording...');
     mediaRecorderRef.current = null;
     audioChunksRef.current = [];
-    console.log('✅ Refs reset: ready for next recording');
 
     return blob;
   };
 
   const handleNextQuestion = async (skipAudioRecording = false) => {
     try {
-      console.log('🔴 [handleNextQuestion] CALLED');
-      console.log('   skipAudioRecording:', skipAudioRecording);
-      console.log('   currentQuestion:', currentQuestion?.question_id, currentQuestion?.question_type);
-      console.log('   isRecording:', isRecording);
-      
-      // Handle document upload questions (only if not coming from file upload)
+      console.log('🔴 [handleNextQuestion] Question:', currentQuestion?.question_id);
+
+      // Handle yes/no questions
+      if (currentQuestion.question_type === 'yes_no') {
+        if (yesNoAnswer === null) {
+          toast.warning('⚠️ Please select Yes or No');
+          return;
+        }
+
+        setYesNoAnswers((prev) => ({
+          ...prev,
+          [currentQuestion.question_id]: yesNoAnswer,
+        }));
+
+        setYesNoAnswer(null);
+        proceeedToNextQuestion();
+        return;
+      }
+
+      // Handle document upload questions
       if (!skipAudioRecording && currentQuestion.question_type === 'document_upload') {
-        console.log('📄 Document upload - returning early');
         toast.info('Please use the file upload button to submit your document');
         return;
       }
 
-      // Check if text answer or audio was provided
-      let hasAnswer = false;
-      
-      // Stop recording and get audio blob (unless skipping for file upload)
+      // Handle consent question with validation
+      if (currentQuestion.question_type === 'consent') {
+        let audioBlob: Blob | null = null;
+        if (!skipAudioRecording) {
+          audioBlob = stopRecording();
+        }
+
+        if (audioBlob) {
+          setIsUploading(true);
+          try {
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'answer.webm');
+            formData.append('question_id', currentQuestion.question_id.toString());
+
+            const transcribeResponse = await fetch(
+              `http://localhost:8004/api/video-onboarding/sessions/${sessionId}/transcribe-audio`,
+              {
+                method: 'POST',
+                body: formData,
+              }
+            );
+
+            if (transcribeResponse.ok) {
+              const transcribeData = await transcribeResponse.json();
+              setConsentTranscript(transcribeData.text);
+
+              // Validate consent
+              const isValidConsent = validateConsent(transcribeData.text, consentCheckbox);
+
+              if (isValidConsent) {
+                setVerificationTags((prev) => [...prev, '✅ Consent']);
+                toast.success('✅ Consent Verified & Recorded');
+                setTranscripts((prev) => [...prev, transcribeData.text]);
+                await api.uploadVideoAudio(
+                  sessionId!,
+                  currentQuestion.question_id,
+                  audioBlob,
+                  Math.round(audioBlob.size / 16000),
+                  Math.max(240 - timeRemaining, 5)
+                );
+              } else {
+                toast.error('❌ Consent not validated. Please confirm both audio and checkbox.');
+                return;
+              }
+            }
+          } catch (err) {
+            console.error('❌ Consent processing error:', err);
+            toast.error('Error processing consent');
+            return;
+          } finally {
+            setIsUploading(false);
+          }
+        }
+
+        proceeedToNextQuestion();
+        return;
+      }
+
+      // Handle audio questions
       let audioBlob: Blob | null = null;
       if (!skipAudioRecording) {
-        console.log('🎤 Calling stopRecording...');
         audioBlob = stopRecording();
-        console.log('🛬 stopRecording returned:', {
-          exists: !!audioBlob,
-          size: audioBlob?.size || 'N/A',
-          type: audioBlob?.type || 'N/A'
-        });
       }
 
       if (audioBlob) {
-        // 🔥 Upload audio answer WITH WHISPER TRANSCRIPTION
         setIsUploading(true);
-        const duration = timeRemaining > 0 
-          ? currentQuestion.timer_seconds - timeRemaining 
-          : currentQuestion.timer_seconds;
-
-        console.log('📦 AUDIO BLOB RECEIVED:', {
-          size: audioBlob.size,
-          type: audioBlob.type,
-          duration: duration
-        });
-
         try {
-          console.log('🎤 [TRANSCRIBE] Starting Whisper transcription...');
-          
-          // Step 1: Transcribe with Whisper
           const formData = new FormData();
           formData.append('file', audioBlob, 'answer.webm');
           formData.append('question_id', currentQuestion.question_id.toString());
 
-          console.log('📤 Posting to /transcribe-audio with blob...');
           const transcribeResponse = await fetch(
             `http://localhost:8004/api/video-onboarding/sessions/${sessionId}/transcribe-audio`,
             {
@@ -573,88 +584,119 @@ export default function VideoOnboardingMeeting() {
             }
           );
 
-          console.log('📥 Transcribe response status:', transcribeResponse.status);
+          if (transcribeResponse.ok) {
+            const transcribeData = await transcribeResponse.json();
+            setTranscripts((prev) => [...prev, transcribeData.text]);
 
-          if (!transcribeResponse.ok) {
-            const errorText = await transcribeResponse.text();
-            console.error('❌ Transcription error response:', errorText);
-            throw new Error(`Transcription failed: ${transcribeResponse.statusText}`);
+            await api.uploadVideoAudio(
+              sessionId!,
+              currentQuestion.question_id,
+              audioBlob,
+              Math.round(audioBlob.size / 16000),
+              Math.max(240 - timeRemaining, 5)
+            );
+
+            toast.success(`✅ Recorded: "${transcribeData.text}"`);
           }
-
-          const transcribeData = await transcribeResponse.json();
-          console.log('✅ Transcription result:', transcribeData);
-
-          // Step 2: Upload audio (with transcription now stored in DB)
-          console.log('📤 Uploading audio to /upload-audio...');
-          await api.uploadVideoAudio(
-            sessionId!,
-            currentQuestion.question_id,
-            audioBlob,
-            Math.round(audioBlob.size / 16000),
-            Math.max(duration, 5)
-          );
-
-          console.log('✅ Audio uploaded successfully!');
-          toast.success(`✅ Answer recorded: "${transcribeData.text}"`);
-          hasAnswer = true;
         } catch (err) {
-          console.error('❌ Transcription or upload error:', err);
-          toast.error(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          console.error('❌ Upload error:', err);
+          toast.error('Error uploading answer');
+        } finally {
+          setIsUploading(false);
         }
-      } else if (textAnswer.trim()) {
-        // Upload text answer
-        setIsUploading(true);
-        const duration = timeRemaining > 0 
-          ? currentQuestion.timer_seconds - timeRemaining 
-          : currentQuestion.timer_seconds;
+      }
 
-        await api.recordTextAnswer(
-          sessionId!,
-          currentQuestion.question_id,
-          textAnswer.trim(),
-          Math.max(duration, 5)
+      proceeedToNextQuestion();
+    } catch (err: any) {
+      console.error('❌ Error:', err);
+      toast.error(err.message);
+    }
+  };
+
+  const proceeedToNextQuestion = async () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      const nextIndex = currentQuestionIndex + 1;
+      const nextQuestion = questions[nextIndex];
+
+      setCurrentQuestionIndex(nextIndex);
+      setTimeRemaining(nextQuestion?.timer_seconds || 240);
+      setTextAnswer('');
+      startQuestionTimer();
+
+      setTimeout(() => {
+        speakQuestion(nextQuestion);
+      }, 500);
+    } else {
+      // 🏦 Interview Complete - Calculate Risk & Generate Offer
+      console.log('✅ LOAN APPLICATION COMPLETE');
+      setIsUploading(true);
+
+      try {
+        // Extract financial data from transcripts
+        const extractedData = extractFinancialData(transcripts);
+
+        // Check consent from Q9 and Q10
+        const consentFromQ9 = yesNoAnswers[9];
+        const consentFromQ10 = validateConsent(consentTranscript, consentCheckbox);
+        const consentGiven = consentFromQ9 && consentFromQ10;
+
+        extractedData.consentGiven = consentGiven;
+
+        // Calculate risk level
+        const riskLevel = calculateRiskLevel(extractedData);
+
+        // Generate loan offer
+        const loanOffer = generateLoanOffer(riskLevel, consentGiven);
+
+        // Generate audit trail
+        const auditTrail = {
+          sessionId,
+          timestamp: new Date().toISOString(),
+          location,
+          documentsUploaded,
+          transcripts,
+          yesNoAnswers,
+          consentStatus: consentGiven,
+          consentTranscript,
+          extractedData,
+          riskLevel,
+          loanOffer,
+          verificationTags,
+        };
+
+        console.log('🏦 Loan Origination Result:', auditTrail);
+
+        // Store result in localStorage for LoanResultPage
+        localStorage.setItem(
+          'loanApplicationResult',
+          JSON.stringify({
+            status: loanOffer.status,
+            riskLevel: riskLevel,
+            amount: loanOffer.amount,
+            interestRate: loanOffer.interestRate,
+            tenure: loanOffer.tenure,
+            emi: loanOffer.emi,
+            reason: loanOffer.reason,
+            consentStatus: consentGiven,
+            location,
+            timestamp: new Date().toISOString(),
+          })
         );
 
-        toast.success('✅ Text answer recorded!');
-        hasAnswer = true;
-      } else if (!skipAudioRecording && currentQuestion.required) {
-        toast.warning('⚠️ Please record audio or type your answer');
-        return;
-      } else if (!skipAudioRecording) {
-        toast.info('ℹ️ Skipping optional question');
-        hasAnswer = true;
-      }
+        // Also store full audit trail
+        localStorage.setItem('loanAuditTrail', JSON.stringify(auditTrail));
 
-      // Reset text answer for next question
-      setTextAnswer('');
-
-      console.log('📋 Answer submission complete - hasAnswer:', hasAnswer);
-
-      // Move to next question
-      if (currentQuestionIndex < questions.length - 1) {
-        const nextIndex = currentQuestionIndex + 1;
-        const nextQuestion = questions[nextIndex];
-        
-        console.log('➡️ [MOVE TO NEXT] Q' + (currentQuestionIndex + 1) + ' → Q' + (nextIndex + 1));
-        setCurrentQuestionIndex(nextIndex);
-        setTimeRemaining(nextQuestion?.timer_seconds || 240);
-        startQuestionTimer();
-        
-        console.log('🎙️ Speaking next question immediately (Q' + (nextIndex + 1) + ')...');
-        // 🔥 PASS THE NEXT QUESTION SO IT SPEAKS IMMEDIATELY (not the old currentQuestion)
-        speakQuestion(nextQuestion);
-      } else {
-        // Interview complete
-        console.log('✅ INTERVIEW COMPLETE');
-        setIsUploading(true);
+        // Submit to HR
         await api.submitVideoOnboardingForHR(sessionId!);
-        navigate('/video/thank-you');
+
+        // Navigate to loan result page
+        navigate('/video/loan-result');
+      } catch (err: any) {
+        console.error('❌ Error:', err);
+        toast.error('Error completing application');
+      } finally {
+        setIsUploading(false);
       }
-    } catch (err: any) {
-      console.error('❌ [handleNextQuestion] CAUGHT ERROR:', err);
-      toast.error(`❌ ${err.message}`);
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -664,15 +706,13 @@ export default function VideoOnboardingMeeting() {
 
     try {
       setIsUploading(true);
-      
-      // Validate file type
+
       const validTypes = ['image/png', 'image/jpeg', 'application/pdf'];
       if (!validTypes.includes(file.type)) {
         toast.error('Only PNG, JPEG, and PDF files are allowed');
         return;
       }
 
-      // Validate file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         toast.error('File size must be less than 10MB');
         return;
@@ -684,9 +724,10 @@ export default function VideoOnboardingMeeting() {
       formData.append('file', file);
 
       await api.uploadVideoDocument(sessionId!, formData);
-      toast.success(`✅ ${file.name} uploaded successfully!`);
 
-      // Auto-advance to next question (skip audio recording check)
+      setDocumentsUploaded((prev) => [...prev, `${currentQuestion.document_type}_${file.name}`]);
+      toast.success(`✅ ${file.name} uploaded!`);
+
       setTimeout(() => {
         handleNextQuestion(true);
       }, 500);
@@ -708,57 +749,18 @@ export default function VideoOnboardingMeeting() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading meeting...</p>
+          <p className="text-gray-600">Loading loan application...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      {/* Recording Indicator - Top Right - HIGHEST LAYER */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 99999,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          border: '2px solid #ef4444',
-          backdropFilter: 'blur(4px)'
-        }}
-      >
-        <div
-          style={{
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#ef4444',
-            borderRadius: '50%',
-            animation: 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-          }}
-        />
-        <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#fca5a5', letterSpacing: '1px' }}>
-          ● REC
-        </span>
-      </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen bg-gray-900 text-white relative"
-      >
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-gray-900 text-white relative"
+    >
       {/* Camera Feed - Full Screen Background */}
       <div
         ref={jitsiContainerRef}
@@ -773,7 +775,7 @@ export default function VideoOnboardingMeeting() {
           overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
         }}
       />
 
@@ -787,15 +789,52 @@ export default function VideoOnboardingMeeting() {
             className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-indigo-900 to-purple-900 p-6 border-b-4 border-indigo-500 shadow-lg"
           >
             <div className="max-w-4xl mx-auto">
+              {/* 📊 Progress Tracker Q1→Q2→...→Q10 */}
+              <div className="mb-6 p-3 bg-black/40 rounded-lg backdrop-blur-sm border border-indigo-500/30">
+                <div className="flex items-center gap-1 justify-center flex-wrap">
+                  {questions.map((q, idx) => (
+                    <div key={q.question_id} className="flex items-center">
+                      <motion.div
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: idx === currentQuestionIndex ? 1.2 : 1 }}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                          idx < currentQuestionIndex
+                            ? 'bg-green-500 text-white'
+                            : idx === currentQuestionIndex
+                            ? 'bg-indigo-500 text-white ring-2 ring-indigo-300 animate-pulse'
+                            : 'bg-gray-700 text-gray-300'
+                        }`}
+                      >
+                        {idx < currentQuestionIndex ? '✓' : idx + 1}
+                      </motion.div>
+                      {idx < questions.length - 1 && (
+                        <div
+                          className={`w-3 h-0.5 mx-1 transition-all ${
+                            idx < currentQuestionIndex ? 'bg-green-500' : 'bg-gray-700'
+                          }`}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Progress */}
-              <div className="mb-3 text-sm text-indigo-200">
-                Question {currentQuestionIndex + 1} of {questions.length}
+              <div className="mb-3 text-sm text-indigo-200 flex items-center justify-between">
+                <span>
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </span>
+                <div className="flex gap-2 flex-wrap justify-end">
+                  {verificationTags.map((tag) => (
+                    <span key={tag} className="bg-green-600/30 px-2 py-1 rounded text-xs font-bold">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               {/* Question Text */}
-              <h2 className="text-3xl font-black text-white mb-4">
-                {currentQuestion.question_text}
-              </h2>
+              <h2 className="text-3xl font-black text-white mb-4">{currentQuestion.question_text}</h2>
 
               {/* Category & Timer */}
               <div className="flex items-center justify-between">
@@ -805,7 +844,7 @@ export default function VideoOnboardingMeeting() {
                   </span>
                   {isSpeaking && (
                     <span className="flex items-center gap-2 bg-green-500 px-4 py-1 rounded-full text-sm font-bold animate-pulse">
-                      <Volume2 className="h-4 w-4" /> AI Speaking...
+                      <Volume2 className="h-4 w-4" /> Reading...
                     </span>
                   )}
                   {isRecording && (
@@ -834,7 +873,7 @@ export default function VideoOnboardingMeeting() {
                 <div
                   className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all"
                   style={{
-                    width: `${((questions.length - currentQuestionIndex - 1) / questions.length) * 100}%`,
+                    width: `${((currentQuestionIndex + 1) / questions.length) * 100}%`,
                   }}
                 />
               </div>
@@ -843,53 +882,61 @@ export default function VideoOnboardingMeeting() {
         )}
       </AnimatePresence>
 
-      {/* Text Answer Input - Collapsible */}
-      {currentQuestion?.question_type !== 'document_upload' && !isRecording && (
+      {/* Yes/No Question UI */}
+      {currentQuestion?.question_type === 'yes_no' && !isRecording && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-32 left-4 z-30"
+          className="fixed bottom-32 left-4 right-4 z-30 max-w-xs mx-auto"
         >
-          {!showTextInput ? (
-            // 📝 Collapsed state - just an icon button
-            <Button
-              onClick={() => setShowTextInput(true)}
-              variant="outline"
-              className="bg-white border-2 border-indigo-400 hover:bg-indigo-50 rounded-full p-4 shadow-lg"
-              title="Click to type your answer"
-            >
-              📝
-            </Button>
-          ) : (
-            // ✍️ Expanded state - full textarea
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white bg-opacity-95 p-4 rounded-lg shadow-lg border-2 border-indigo-400 w-80 max-w-xs"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-semibold text-gray-700">✍️ Type your answer:</p>
-                <button
-                  onClick={() => setShowTextInput(false)}
-                  className="text-gray-400 hover:text-gray-600 text-lg leading-none"
-                >
-                  ✕
-                </button>
-              </div>
-              <textarea
-                value={textAnswer}
-                onChange={(e) => setTextAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                className="w-full p-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 resize-none text-sm"
-                rows={4}
-                disabled={isUploading}
-                autoFocus
+          <div className="bg-white bg-opacity-95 p-4 rounded-lg shadow-lg border-2 border-indigo-400">
+            <p className="text-sm font-semibold text-gray-700 mb-4">Select your answer:</p>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setYesNoAnswer(true)}
+                className={`flex-1 py-2 font-bold rounded-lg transition-all ${
+                  yesNoAnswer === true
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-green-100'
+                }`}
+              >
+                👍 Yes
+              </Button>
+              <Button
+                onClick={() => setYesNoAnswer(false)}
+                className={`flex-1 py-2 font-bold rounded-lg transition-all ${
+                  yesNoAnswer === false
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-red-100'
+                }`}
+              >
+                👎 No
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Consent Checkbox for Question 10 */}
+      {currentQuestion?.question_type === 'consent' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-32 left-4 right-4 z-30 max-w-xs mx-auto"
+        >
+          <div className="bg-white bg-opacity-95 p-4 rounded-lg shadow-lg border-2 border-indigo-400">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consentCheckbox}
+                onChange={(e) => setConsentCheckbox(e.target.checked)}
+                className="mt-1 w-5 h-5"
               />
-              <p className="text-xs text-gray-500 mt-2">
-                {textAnswer.length} characters
-              </p>
-            </motion.div>
-          )}
+              <span className="text-sm font-semibold text-gray-700">
+                I agree to the above terms and consent to loan processing
+              </span>
+            </label>
+          </div>
         </motion.div>
       )}
 
@@ -905,10 +952,9 @@ export default function VideoOnboardingMeeting() {
           disabled={isSpeaking || isUploading}
         >
           <Volume2 className="h-5 w-5 mr-2" />
-          Repeat Question
+          Repeat
         </Button>
 
-        {/* Document Upload for document_upload questions */}
         {currentQuestion?.question_type === 'document_upload' ? (
           <>
             <input
@@ -927,6 +973,22 @@ export default function VideoOnboardingMeeting() {
               📁 {isUploading ? 'Uploading...' : 'Upload Document'}
             </Button>
           </>
+        ) : currentQuestion?.question_type === 'yes_no' ? (
+          <Button
+            onClick={() => handleNextQuestion()}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 disabled:opacity-50"
+            disabled={yesNoAnswer === null || isUploading}
+          >
+            Next Question →
+          </Button>
+        ) : currentQuestion?.question_type === 'consent' ? (
+          <Button
+            onClick={() => handleNextQuestion()}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 disabled:opacity-50"
+            disabled={!consentCheckbox || isUploading}
+          >
+            {currentQuestionIndex === questions.length - 1 ? '✅ Submit Application' : 'Next Question →'}
+          </Button>
         ) : (
           <>
             {!isRecording ? (
@@ -947,16 +1009,15 @@ export default function VideoOnboardingMeeting() {
                 Stop Recording
               </Button>
             )}
+            <Button
+              onClick={() => handleNextQuestion()}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 disabled:opacity-50"
+              disabled={isUploading}
+            >
+              {currentQuestionIndex === questions.length - 1 ? '✅ Submit Application' : 'Next Question →'}
+            </Button>
           </>
         )}
-
-        <Button
-          onClick={() => handleNextQuestion()}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 disabled:opacity-50"
-          disabled={isUploading}
-        >
-          {currentQuestionIndex === questions.length - 1 ? '✅ Complete' : 'Next Question →'}
-        </Button>
 
         <Button
           onClick={() => navigate('/video/records')}
@@ -967,7 +1028,6 @@ export default function VideoOnboardingMeeting() {
           Exit
         </Button>
       </motion.div>
-      </motion.div>
-    </>
+    </motion.div>
   );
 }
