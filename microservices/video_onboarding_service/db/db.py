@@ -67,25 +67,32 @@ def init_db():
 
 
 def _insert_predefined_questions(cur: sqlite3.Cursor):
-    """Insert the 10 predefined onboarding questions.
+    """Insert the 11 loan-based interview questions.
     
-    Q1-Q2: Document upload (Aadhar, PAN)
-    Q3-Q10: Audio with Whisper transcription (all text-based via audio)
+    Q1-Q3: Document upload (Aadhar, PAN, Salary Slip)
+    Q4-Q8: Audio questions (name, occupation, income, loan purpose, address)
+    Q9-Q10: Yes/No questions (existing loans, consent)
+    Q11: Consent audio statement
     """
     questions = [
-        # Q1-Q2: Document Upload only
-        (1, "Please upload your Aadhar Card for identity verification", "document_upload", "Identity Verification", True, 1, "aadhar", 120),
-        (2, "Please upload your PAN Card for tax verification", "document_upload", "Tax Verification", True, 2, "pan", 120),
+        # Q1-Q3: Document Upload
+        (1, "Upload your Aadhar Card (Front & Back)", "document_upload", "Identity", True, 1, "aadhar", 120),
+        (2, "Upload your PAN Card", "document_upload", "Identity", True, 2, "pan", 120),
+        (3, "Upload your Salary Slip (Latest 3 months)", "document_upload", "Financial", True, 3, "salary_slip", 120),
         
-        # Q3-Q10: Audio with Whisper transcription (no more yes_no questions)
-        (3, "Have you read and understood the company policies and code of conduct? Please respond with yes or no.", "audio", "Compliance", True, 3, None, 90),
-        (4, "Do you agree to comply with all company rules, confidentiality terms, and data security policies? Please confirm.", "audio", "Compliance", True, 4, None, 90),
-        (5, "Please confirm your full name, role, and department you are joining", "audio", "Onboarding", True, 5, None, 90),
-        (6, "Confirm your current address and contact details for company records", "audio", "Onboarding", True, 6, None, 90),
-        (7, "Are you aware of your joining date, reporting manager, and work location? Please confirm", "audio", "Onboarding", True, 7, None, 90),
-        (8, "Do you have any ongoing commitments or notice period details that HR should be aware of?", "audio", "Onboarding", True, 8, None, 90),
-        (9, "Do you require any special accommodations, equipment, or support from the company?", "audio", "Onboarding", True, 9, None, 90),
-        (10, "Please confirm that all information and documents provided by you are accurate and genuine", "audio", "Onboarding", False, 10, None, 90),
+        # Q4-Q8: Audio Questions
+        (4, "Please confirm your full name and date of birth", "audio", "Personal", True, 4, None, 60),
+        (5, "What is your current occupation?", "audio", "Employment", True, 5, None, 60),
+        (6, "What is your approximate monthly income?", "audio", "Financial", True, 6, None, 90),
+        (7, "What is the primary purpose of this loan?", "audio", "Financial", True, 7, None, 90),
+        (8, "Please confirm your current address", "audio", "Personal", True, 8, None, 60),
+        
+        # Q9-Q10: Yes/No Questions
+        (9, "Are you currently servicing any existing loans?", "yes_no", "Financial", True, 9, None, 60),
+        (10, "Do you consent to share your financial data for loan processing?", "yes_no", "Consent", True, 10, None, 60),
+        
+        # Q11: Consent Audio
+        (11, "Please read aloud: \"I confirm that all information provided is accurate and complete. I consent to this loan application and authorize the processing of my personal and financial data.\"", "consent", "Consent", True, 11, None, 120),
     ]
     
     for q in questions:
@@ -579,6 +586,30 @@ def get_verification_data(session_id: str) -> Optional[dict]:
     conn.close()
     
     return dict(row) if row else None
+
+
+def delete_video_session(session_id: str) -> bool:
+    """Delete a video session and all associated data (cascade deletion)."""
+    conn = _connect()
+    cur = conn.cursor()
+    
+    try:
+        # Delete related records first (foreign key constraints)
+        cur.execute("DELETE FROM answer_records WHERE session_id = ?", (session_id,))
+        cur.execute("DELETE FROM documents WHERE session_id = ?", (session_id,))
+        cur.execute("DELETE FROM candidate_verification WHERE session_id = ?", (session_id,))
+        cur.execute("DELETE FROM audit_log WHERE session_id = ?", (session_id,))
+        
+        # Finally delete the session
+        cur.execute("DELETE FROM video_sessions WHERE session_id = ?", (session_id,))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        conn.close()
+        print(f"Error deleting session: {e}")
+        return False
 
 
 # ──────────────────────────────────────────────────────────────────

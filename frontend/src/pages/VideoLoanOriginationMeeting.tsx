@@ -489,12 +489,31 @@ export default function VideoLoanOriginationMeeting() {
           return;
         }
 
+        const answerText = yesNoAnswer ? 'Yes' : 'No';
+        
+        // Record in state
         setYesNoAnswers((prev) => ({
           ...prev,
           [currentQuestion.question_id]: yesNoAnswer,
         }));
 
+        // Record to transcripts for financial extraction
+        setTranscripts((prev) => [...prev, answerText]);
+
+        // Record in backend
+        try {
+          await api.recordTextAnswer(
+            sessionId!,
+            currentQuestion.question_id,
+            answerText,
+            5
+          );
+        } catch (err) {
+          console.error('Error recording yes/no answer:', err);
+        }
+
         setYesNoAnswer(null);
+        toast.success(`✅ Answer recorded: ${answerText}`);
         proceeedToNextQuestion();
         return;
       }
@@ -503,6 +522,15 @@ export default function VideoLoanOriginationMeeting() {
       if (!skipAudioRecording && currentQuestion.question_type === 'document_upload') {
         toast.info('Please use the file upload button to submit your document');
         return;
+      }
+
+      // ✅ DOCUMENT UPLOAD COMPLETED (skipAudioRecording = true)
+      if (skipAudioRecording && currentQuestion.question_type === 'document_upload') {
+        console.log(`📄 Document uploaded for Q${currentQuestion.question_id}`);
+        
+        // Add placeholder to transcripts for document uploads
+        const docName = currentQuestion.document_type || 'Document';
+        setTranscripts(prev => [...prev, `${docName} uploaded`]);
       }
 
       // Handle consent question with validation
@@ -690,7 +718,7 @@ export default function VideoLoanOriginationMeeting() {
         await api.submitVideoOnboardingForHR(sessionId!);
 
         // Navigate to loan result page
-        navigate('/video/loan-result');
+        navigate(`/video/loan-result/${sessionId}`);
       } catch (err: any) {
         console.error('❌ Error:', err);
         toast.error('Error completing application');
@@ -974,21 +1002,67 @@ export default function VideoLoanOriginationMeeting() {
             </Button>
           </>
         ) : currentQuestion?.question_type === 'yes_no' ? (
-          <Button
-            onClick={() => handleNextQuestion()}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 disabled:opacity-50"
-            disabled={yesNoAnswer === null || isUploading}
-          >
-            Next Question →
-          </Button>
+          /* Yes/No Buttons for Q9 & Q10 */
+          <>
+            <Button
+              onClick={() => {
+                setYesNoAnswer(true);
+                toast.success('✅ Answer recorded: Yes');
+                setTimeout(() => handleNextQuestion(), 500);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-2 text-lg"
+              disabled={isUploading}
+            >
+              ✓ YES
+            </Button>
+            <Button
+              onClick={() => {
+                setYesNoAnswer(false);
+                toast.success('❌ Answer recorded: No');
+                setTimeout(() => handleNextQuestion(), 500);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-2 text-lg"
+              disabled={isUploading}
+            >
+              ✗ NO
+            </Button>
+          </>
         ) : currentQuestion?.question_type === 'consent' ? (
-          <Button
-            onClick={() => handleNextQuestion()}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 disabled:opacity-50"
-            disabled={!consentCheckbox || isUploading}
-          >
-            {currentQuestionIndex === questions.length - 1 ? '✅ Submit Application' : 'Next Question →'}
-          </Button>
+          /* Consent Checkbox for Q11 */
+          <>
+            <div className="flex items-center gap-3 bg-white bg-opacity-10 px-6 py-3 rounded-lg border-2 border-blue-400">
+              <input
+                type="checkbox"
+                checked={consentCheckbox}
+                onChange={(e) => setConsentCheckbox(e.target.checked)}
+                className="w-6 h-6 cursor-pointer"
+              />
+              <label className="text-white font-semibold cursor-pointer flex-1">
+                I hereby consent to all terms
+              </label>
+            </div>
+            {!isRecording ? (
+              <Button
+                onClick={startRecording}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 disabled:opacity-50"
+                disabled={!consentCheckbox || isUploading}
+              >
+                <Mic className="h-5 w-5 mr-2" />
+                Record Consent
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  stopRecording();
+                  setTimeout(() => handleNextQuestion(), 500);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold px-6"
+              >
+                <MicOff className="h-5 w-5 mr-2" />
+                Stop Recording
+              </Button>
+            )}
+          </>
         ) : (
           <>
             {!isRecording ? (
@@ -1002,12 +1076,18 @@ export default function VideoLoanOriginationMeeting() {
               </Button>
             ) : (
               <Button
-                onClick={() => stopRecording()}
+                onClick={() => {
+                  stopRecording();
+                  setTimeout(() => handleNextQuestion(), 500);
+                }}
                 className="bg-red-600 hover:bg-red-700 text-white font-bold px-6"
               >
                 <MicOff className="h-5 w-5 mr-2" />
                 Stop Recording
               </Button>
+            )}
+          </>
+        )}
             )}
             <Button
               onClick={() => handleNextQuestion()}
