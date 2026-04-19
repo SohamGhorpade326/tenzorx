@@ -104,7 +104,7 @@ LoanPilot replaces static workflows with a **dynamic AI-driven pipeline**:
 
 **AI/ML**
 - Whisper (Speech-to-Text)
-- Computer Vision (Age Estimation)
+- OpenCV DNN Pipeline (Age Estimation)
 - Groq LLM (Decisioning)
 
 **Other**
@@ -165,9 +165,9 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8004 --reload
 
 The system classifies users into:
 
-✅ Eligible → Loan offer generated
-⚠️ Conditionally Eligible → Additional verification required
-❌ Not Eligible → Reason provided
+- ✅ Eligible → Loan offer generated
+- ⚠️ Conditionally Eligible → Additional verification required
+- ❌ Not Eligible → Reason provided
 
 ---
 
