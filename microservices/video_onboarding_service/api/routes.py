@@ -14,6 +14,8 @@ from models.schemas import (
     SubmitForHRReviewRequest,
     SessionListResponse,
     SessionSummary,
+    GroqDecisionRequest,
+    GroqDecisionResponse,
 )
 from services.video_session_service import (
     create_video_session,
@@ -39,7 +41,14 @@ from db.db import (
     save_verification_signature,
     get_verification_data,
     delete_video_session,
+    save_cv_age_estimate,
+    save_age_verification,
 )
+
+from services.age_estimation import estimate_age_from_image_bytes
+from services.groq_decision import get_decision_from_groq
+
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter(prefix="/api/video-onboarding", tags=["video_onboarding"])
 
@@ -92,6 +101,8 @@ async def list_sessions(
     limit: int = 50
 ):
     """List video onboarding sessions."""
+    from db.db import get_total_questions
+    total_questions = get_total_questions() or 10
     sessions = list_video_sessions(employee_id, status, limit)
     
     return SessionListResponse(
@@ -103,7 +114,7 @@ async def list_sessions(
                 status=s["status"],
                 created_at=s["created_at"],
                 completed_at=s["completed_at"],
-                progress=(s["questions_answered"] / 10) * 100 if s["questions_answered"] else 0,
+                progress=(s["questions_answered"] / total_questions) * 100 if s["questions_answered"] else 0,
             )
             for s in sessions
         ],
@@ -137,6 +148,18 @@ async def start_interview_session(session_id: str):
         "first_question": dict(first_question) if first_question else None,
         "total_questions": len(questions),
     }
+
+
+@router.post("/sessions/{session_id}/decision", response_model=GroqDecisionResponse)
+async def decision_for_session(session_id: str, body: GroqDecisionRequest):
+    """Post-onboarding decision stage (calls Groq via raw HTTP)."""
+    session = get_video_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    payload = body.model_dump()
+    decision = await run_in_threadpool(get_decision_from_groq, payload)
+    return decision
 
 
 @router.get("/sessions/{session_id}/next-question")
@@ -238,6 +261,82 @@ async def transcribe_audio(
 
 
 # ──────────────────────────────────────────────────────────────────
+# CV AGE ESTIMATION (Silent pre-question step)
+# ──────────────────────────────────────────────────────────────────
+
+@router.post("/sessions/{session_id}/cv-age-estimate")
+async def cv_age_estimate(
+    session_id: str,
+    file: UploadFile = File(...),
+):
+    """Run CV age estimation on a single frame image (JPEG/PNG) and persist it."""
+    session = get_video_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    try:
+        image_bytes = await file.read()
+        if not image_bytes or len(image_bytes) < 100:
+            raise HTTPException(status_code=400, detail="Image file is empty or too small")
+
+        estimate = estimate_age_from_image_bytes(image_bytes)
+        if not estimate:
+            return {
+                "success": True,
+                "cv_estimated_age": None,
+                "cv_age_range": None,
+                "message": "No face detected",
+            }
+
+        save_cv_age_estimate(session_id, estimate.midpoint_age, estimate.age_range)
+
+        return {
+            "success": True,
+            "cv_estimated_age": estimate.midpoint_age,
+            "cv_age_range": estimate.age_range,
+            "confidence_pct": estimate.confidence_pct,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"CV age estimation failed: {str(e)}")
+
+
+@router.post("/sessions/{session_id}/age-verification")
+async def persist_age_verification(
+    session_id: str,
+    body: dict,
+):
+    """Persist DOB-based age verification results for downstream risk engines."""
+    session = get_video_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    declared_age = body.get("declared_age")
+    age_difference = body.get("age_difference")
+    age_status = body.get("age_status")
+    age_verification_flag = body.get("age_verification_flag")
+
+    if declared_age is None or age_difference is None or not age_status:
+        raise HTTPException(status_code=400, detail="declared_age, age_difference, and age_status are required")
+
+    try:
+        save_age_verification(
+            session_id,
+            int(declared_age),
+            int(age_difference),
+            str(age_status),
+            str(age_verification_flag) if age_verification_flag is not None else None,
+        )
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to persist age verification: {str(e)}")
+
+
+# ──────────────────────────────────────────────────────────────────
 # DOCUMENT UPLOAD
 # ──────────────────────────────────────────────────────────────────
 
@@ -311,7 +410,7 @@ async def upload_audio(
             # Default to webm if no extension
             file_ext = '.webm'
         
-        from db.db import record_audio_answer
+        from db.db import record_audio_answer, get_latest_audio_transcript
         
         # Create session-specific folder
         session_upload_dir = os.path.join("./uploads", session_id)
@@ -327,18 +426,28 @@ async def upload_audio(
         
         print(f"💾 File saved: {file_path}")
         
-        # 🎤 TRANSCRIBE WITH WHISPER
-        print(f"🎤 Transcribing audio with Whisper...")
-        audio_transcript = ""
-        try:
-            import whisper
-            model = whisper.load_model("base")
-            result = model.transcribe(file_path)
-            audio_transcript = result.get("text", "").strip()
-            print(f"✅ Whisper transcription: {audio_transcript}")
-        except Exception as e:
-            print(f"⚠️ Whisper transcription failed: {str(e)}")
-            audio_transcript = ""
+        # Prefer any transcript already generated by /transcribe-audio to avoid
+        # double-transcription and accidental overwrites.
+        existing_transcript = (get_latest_audio_transcript(session_id, question_id) or "").strip()
+
+        audio_transcript = existing_transcript
+
+        if not audio_transcript:
+            # 🎤 TRANSCRIBE WITH WHISPER (shared service, cached model)
+            print(f"🎤 Transcribing audio with Whisper...")
+            try:
+                from services.transcription import transcribe_audio_blob
+
+                audio_format = (file_ext[1:] if file_ext.startswith(".") else file_ext) or "webm"
+                audio_transcript = (transcribe_audio_blob(file_content, audio_format=audio_format, run_id=session_id) or "").strip()
+                print(f"✅ Whisper transcription: {audio_transcript}")
+            except Exception as e:
+                print(f"⚠️ Whisper transcription failed: {str(e)}")
+                audio_transcript = ""
+
+        # If we had an existing transcript, never overwrite it with empty text.
+        if not audio_transcript and existing_transcript:
+            audio_transcript = existing_transcript
         
         # Store relative path for serving via StaticFiles
         relative_path = f"/uploads/{session_id}/{unique_file_name}"

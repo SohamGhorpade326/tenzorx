@@ -7,7 +7,7 @@ from typing import Optional
 from datetime import datetime, timezone
 import requests
 
-from config import UPLOAD_DIR, ORCHESTRATOR_SERVICE_URL, MAX_FILE_SIZE
+from config import UPLOAD_DIR, ORCHESTRATOR_SERVICE_URL, MAX_FILE_SIZE, MEET_BASE_URL
 from db.db import (
     create_video_session as db_create_session,
     get_video_session,
@@ -18,6 +18,7 @@ from db.db import (
     complete_interview as db_complete,
     get_next_question as db_get_next,
     start_interview as db_start,
+    get_total_questions,
 )
 
 
@@ -28,7 +29,7 @@ def create_video_session(employee_name: str, employee_id: str, employee_email: O
 
 def generate_meet_link(session_id: str) -> str:
     """Generate a shareable meet link for the session."""
-    return f"http://localhost:5173/video/interview/{session_id}"
+    return f"{MEET_BASE_URL}/{session_id}"
 
 
 def start_interview(session_id: str) -> bool:
@@ -114,7 +115,10 @@ def get_session_details(session_id: str) -> Optional[dict]:
     
     session_dict = dict(session)
     session_dict["answers"] = answers
-    session_dict["progress"] = (len(answers) / 10) * 100  # 10 total questions
+    total_questions = get_total_questions() or 10
+    questions_answered = int(session_dict.get("questions_answered") or 0)
+    session_dict["total_questions"] = total_questions
+    session_dict["progress"] = (questions_answered / total_questions) * 100 if total_questions else 0
     
     return session_dict
 
@@ -144,6 +148,12 @@ def submit_for_hr_review(session_id: str) -> dict:
             "session_id": session_id,
             "meet_link": session["meet_link"],
             "answers": answers,
+            "cv_estimated_age": session.get("cv_estimated_age"),
+            "cv_age_range": session.get("cv_age_range"),
+            "declared_age": session.get("declared_age"),
+            "age_difference": session.get("age_difference"),
+            "age_status": session.get("age_status"),
+            "age_verification_flag": session.get("age_verification_flag"),
             "completed_at": session["completed_at"],
             "duration_seconds": session["total_duration_seconds"],
         },
