@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional, List
 import uuid
 
-from config import DB_PATH, UPLOAD_DIR
+from config import DB_PATH, UPLOAD_DIR, MEET_BASE_URL
 
 
 # Ensure upload directory exists
@@ -61,46 +61,78 @@ def init_db():
     
     # Insert predefined questions
     _insert_predefined_questions(cur)
+
+    # Handle migrations: Add CV + age verification columns if they don't exist
+    for col_def in [
+        ("cv_estimated_age", "INTEGER"),
+        ("cv_age_range", "TEXT"),
+        ("declared_age", "INTEGER"),
+        ("age_difference", "INTEGER"),
+        ("age_status", "TEXT"),
+        ("age_verification_flag", "TEXT"),
+    ]:
+        col, typ = col_def
+        try:
+            cur.execute(f"ALTER TABLE video_sessions ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" not in str(e).lower() and "already exists" not in str(e).lower():
+                print(f"Migration info ({col}): {e}")
     
     conn.commit()
     conn.close()
 
 
 def _insert_predefined_questions(cur: sqlite3.Cursor):
-    """Insert the 11 loan-based interview questions.
-    
-    Q1-Q3: Document upload (Aadhar, PAN, Salary Slip)
-    Q4-Q8: Audio questions (name, occupation, income, loan purpose, address)
-    Q9-Q10: Yes/No questions (existing loans, consent)
-    Q11: Consent audio statement
+    """Insert the 10 refactored interview questions.
+
+    NOTE: We must not hard-delete from `interview_questions` because historical
+    `answer_records` rows have a foreign-key reference to `interview_questions`.
+    Instead we upsert a versioned question set and make read paths use it.
     """
+
+    category = "onboarding_v2"
+
+    # Use distinct IDs to avoid rewriting historical answers.
     questions = [
-        # Q1-Q3: Document Upload
-        (1, "Upload your Aadhar Card (Front & Back)", "document_upload", "Identity", True, 1, "aadhar", 120),
-        (2, "Upload your PAN Card", "document_upload", "Identity", True, 2, "pan", 120),
-        (3, "Upload your Salary Slip (Latest 3 months)", "document_upload", "Financial", True, 3, "salary_slip", 120),
-        
-        # Q4-Q8: Audio Questions
-        (4, "Please confirm your full name and date of birth", "audio", "Personal", True, 4, None, 60),
-        (5, "What is your current occupation?", "audio", "Employment", True, 5, None, 60),
-        (6, "What is your approximate monthly income?", "audio", "Financial", True, 6, None, 90),
-        (7, "What is the primary purpose of this loan?", "audio", "Financial", True, 7, None, 90),
-        (8, "Please confirm your current address", "audio", "Personal", True, 8, None, 60),
-        
-        # Q9-Q10: Yes/No Questions
-        (9, "Are you currently servicing any existing loans?", "yes_no", "Financial", True, 9, None, 60),
-        (10, "Do you consent to share your financial data for loan processing?", "yes_no", "Consent", True, 10, None, 60),
-        
-        # Q11: Consent Audio
-        (11, "Please read aloud: \"I confirm that all information provided is accurate and complete. I consent to this loan application and authorize the processing of my personal and financial data.\"", "consent", "Consent", True, 11, None, 120),
+        (101, "Can you please state your full name as per your PAN or Aadhaar?", "audio", category, True, 1, None, 60),
+        (102, "What is your date of birth?", "audio", category, True, 2, None, 60),
+        (103, "What is your current residential address?", "audio", category, True, 3, None, 90),
+        (104, "Are you salaried or self-employed?", "audio", category, True, 4, None, 60),
+        (105, "What is your current monthly or annual income?", "audio", category, True, 5, None, 90),
+        (106, "Where are you currently working or what is your business name?", "audio", category, True, 6, None, 90),
+        (107, "What is the purpose of the loan you are applying for?", "audio", category, True, 7, None, 90),
+        (108, "What loan amount are you looking for and for how long (tenure)?", "audio", category, True, 8, None, 90),
+        (109, "Do you currently have any existing loans or EMIs?", "audio", category, True, 9, None, 60),
+        (110, "Do you consent to this video-based onboarding and confirm that all the information provided is accurate?", "audio", category, True, 10, None, 60),
     ]
-    
+
     for q in questions:
-        cur.execute("""
-            INSERT OR IGNORE INTO interview_questions 
+        cur.execute(
+            """
+            INSERT INTO interview_questions
             (question_id, question_text, question_type, category, required, "order", document_type, timer_seconds)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, q)
+            ON CONFLICT(question_id) DO UPDATE SET
+              question_text=excluded.question_text,
+              question_type=excluded.question_type,
+              category=excluded.category,
+              required=excluded.required,
+              "order"=excluded."order",
+              document_type=excluded.document_type,
+              timer_seconds=excluded.timer_seconds
+            """,
+            q,
+        )
+
+
+def get_total_questions() -> int:
+    """Return the number of active interview questions."""
+    conn = _connect()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) as c FROM interview_questions WHERE category = ?", ("onboarding_v2",))
+    row = cur.fetchone()
+    conn.close()
+    return int(row["c"] or 0)
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -113,7 +145,7 @@ def create_video_session(employee_name: str, employee_id: str, employee_email: O
     cur = conn.cursor()
     
     session_id = uuid.uuid4().hex[:12]
-    meet_link = f"http://localhost:5173/video/meet/{session_id}"
+    meet_link = f"{MEET_BASE_URL}/{session_id}"
     jitsi_room_id = f"onboarding_{session_id}"
     
     cur.execute("""
@@ -135,7 +167,7 @@ def create_video_session(employee_name: str, employee_id: str, employee_email: O
         "jitsi_room_id": jitsi_room_id,
         "status": "created",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "questions_count": 10,
+        "questions_count": get_total_questions() or 10,
     }
 
 
@@ -149,6 +181,53 @@ def get_video_session(session_id: str) -> Optional[dict]:
     conn.close()
     
     return dict(row) if row else None
+
+
+def save_cv_age_estimate(session_id: str, cv_estimated_age: int, cv_age_range: str) -> bool:
+    """Persist CV age estimate metadata onto the session row."""
+    conn = _connect()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        UPDATE video_sessions
+        SET cv_estimated_age = ?, cv_age_range = ?
+        WHERE session_id = ?
+        """,
+        (cv_estimated_age, cv_age_range, session_id),
+    )
+    _log_audit(cur, session_id, "cv_age_estimated", f"CV age estimated: {cv_age_range} (~{cv_estimated_age})")
+    conn.commit()
+    conn.close()
+    return cur.rowcount > 0
+
+
+def save_age_verification(
+    session_id: str,
+    declared_age: int,
+    age_difference: int,
+    age_status: str,
+    age_verification_flag: str | None = None,
+) -> bool:
+    """Persist DOB-declared age verification metadata onto the session row."""
+    conn = _connect()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        UPDATE video_sessions
+        SET declared_age = ?, age_difference = ?, age_status = ?, age_verification_flag = ?
+        WHERE session_id = ?
+        """,
+        (declared_age, age_difference, age_status, age_verification_flag, session_id),
+    )
+    _log_audit(
+        cur,
+        session_id,
+        "age_verified",
+        f"Age verification: declared={declared_age}, diff={age_difference}, status={age_status}, flag={age_verification_flag}",
+    )
+    conn.commit()
+    conn.close()
+    return cur.rowcount > 0
 
 
 def list_video_sessions(employee_id: Optional[str] = None, status: Optional[str] = None, limit: int = 50) -> List[dict]:
@@ -251,10 +330,13 @@ def record_answer(session_id: str, question_id: int, answer_text: Optional[str] 
     cur.execute("""
         UPDATE video_sessions
         SET questions_answered = (
-            SELECT COUNT(*) FROM answer_records WHERE session_id = ?
+            SELECT COUNT(*)
+            FROM answer_records ar
+            JOIN interview_questions iq ON iq.question_id = ar.question_id
+            WHERE ar.session_id = ? AND iq.category = ?
         )
         WHERE session_id = ?
-    """, (session_id, session_id))
+    """, (session_id, "onboarding_v2", session_id))
     
     _log_audit(cur, session_id, "answer_recorded", f"Answer recorded for question {question_id}")
     
@@ -292,21 +374,49 @@ def record_audio_answer(session_id: str, question_id: int, audio_path: str,
     cur = conn.cursor()
     
     now = datetime.now(timezone.utc).isoformat()
-    
-    cur.execute("""
-        INSERT INTO answer_records 
-        (session_id, question_id, audio_path, audio_duration_seconds, audio_transcript, answered_at, duration_seconds)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (session_id, question_id, audio_path, audio_duration_seconds, audio_transcript, now, duration_seconds))
+
+    # Upsert behavior: use the latest row for this (session_id, question_id) if present.
+    cur.execute(
+        """SELECT MAX(answer_id) AS aid FROM answer_records WHERE session_id = ? AND question_id = ?""",
+        (session_id, question_id),
+    )
+    row = cur.fetchone()
+    existing_id = (row["aid"] if row else None)
+
+    if existing_id:
+        cur.execute(
+            """
+            UPDATE answer_records
+            SET audio_path = ?,
+                audio_duration_seconds = ?,
+                audio_transcript = ?,
+                answered_at = ?,
+                duration_seconds = ?
+            WHERE answer_id = ?
+            """,
+            (audio_path, audio_duration_seconds, audio_transcript, now, duration_seconds, existing_id),
+        )
+    else:
+        cur.execute(
+            """
+            INSERT INTO answer_records 
+            (session_id, question_id, audio_path, audio_duration_seconds, audio_transcript, answered_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (session_id, question_id, audio_path, audio_duration_seconds, audio_transcript, now, duration_seconds),
+        )
     
     # Update questions_answered count
     cur.execute("""
         UPDATE video_sessions
         SET questions_answered = (
-            SELECT COUNT(*) FROM answer_records WHERE session_id = ?
+            SELECT COUNT(*)
+            FROM answer_records ar
+            JOIN interview_questions iq ON iq.question_id = ar.question_id
+            WHERE ar.session_id = ? AND iq.category = ?
         )
         WHERE session_id = ?
-    """, (session_id, session_id))
+    """, (session_id, "onboarding_v2", session_id))
     
     _log_audit(cur, session_id, "audio_answer_recorded", f"Audio answer recorded for Q{question_id}: {audio_path}")
     
@@ -320,26 +430,75 @@ def update_audio_transcript(session_id: str, question_id: int, transcript: str) 
     """Update the Whisper-generated transcript for an audio answer."""
     conn = _connect()
     cur = conn.cursor()
-    
-    cur.execute("""
-        UPDATE answer_records 
-        SET audio_transcript = ?
-        WHERE session_id = ? AND question_id = ?
-    """, (transcript, session_id, question_id))
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    # If no record exists yet (common when transcribing before uploading), create one.
+    cur.execute(
+        """SELECT MAX(answer_id) AS aid FROM answer_records WHERE session_id = ? AND question_id = ?""",
+        (session_id, question_id),
+    )
+    row = cur.fetchone()
+    existing_id = (row["aid"] if row else None)
+
+    if existing_id:
+        cur.execute(
+            """
+            UPDATE answer_records 
+            SET audio_transcript = ?,
+                answered_at = ?
+            WHERE answer_id = ?
+            """,
+            (transcript, now, existing_id),
+        )
+    else:
+        cur.execute(
+            """
+            INSERT INTO answer_records (session_id, question_id, audio_transcript, answered_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (session_id, question_id, transcript, now, 0),
+        )
+
+    affected_rows = cur.rowcount
     
     _log_audit(cur, session_id, "audio_transcribed", f"Audio transcribed for Q{question_id}: {transcript[:100]}...")
     
     conn.commit()
     conn.close()
     
-    return cur.rowcount > 0
+    return affected_rows > 0
+
+
+def get_latest_audio_transcript(session_id: str, question_id: int) -> Optional[str]:
+    """Return the latest stored audio transcript for a question in a session."""
+    conn = _connect()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT audio_transcript
+        FROM answer_records
+        WHERE session_id = ? AND question_id = ?
+        ORDER BY answer_id DESC
+        LIMIT 1
+        """,
+        (session_id, question_id),
+    )
+
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    return row["audio_transcript"]
 
 
 def get_session_answers(session_id: str) -> List[dict]:
     """Get all answers for a session, including unanswered questions."""
     conn = _connect()
     cur = conn.cursor()
-    
+
+    # Join only the latest answer_records row per question_id for this session.
     cur.execute("""
         SELECT 
             iq.question_id,
@@ -359,10 +518,21 @@ def get_session_answers(session_id: str) -> List[dict]:
             ar.answered_at,
             ar.duration_seconds
         FROM interview_questions iq
-        LEFT JOIN answer_records ar ON ar.question_id = iq.question_id 
-            AND ar.session_id = ?
+        LEFT JOIN (
+            SELECT ar1.*
+            FROM answer_records ar1
+            JOIN (
+                SELECT question_id, MAX(answer_id) AS max_answer_id
+                FROM answer_records
+                WHERE session_id = ?
+                GROUP BY question_id
+            ) latest
+              ON latest.question_id = ar1.question_id AND latest.max_answer_id = ar1.answer_id
+            WHERE ar1.session_id = ?
+        ) ar ON ar.question_id = iq.question_id
+        WHERE iq.category = ?
         ORDER BY iq."order"
-    """, (session_id,))
+    """, (session_id, session_id, "onboarding_v2"))
     
     rows = cur.fetchall()
     conn.close()
@@ -418,35 +588,18 @@ def get_session_documents(session_id: str) -> List[dict]:
 # ──────────────────────────────────────────────────────────────────
 
 def get_all_questions() -> List[dict]:
-    """Get all interview questions.
-    
-    If an active question set exists, return questions from that set.
-    Otherwise, return default predefined questions from interview_questions table.
+    """Get interview questions for the public onboarding flow.
+
+    NOTE: `answer_records.question_id` has an FK to `interview_questions.question_id`,
+    so the public interview must use questions from `interview_questions`.
     """
-    # Check for active question set
-    active_set = get_active_question_set()
-    
-    if active_set and active_set['questions']:
-        # Return questions from active set, formatted to match interview_questions structure
-        questions = []
-        for idx, q in enumerate(active_set['questions']):
-            questions.append({
-                'question_id': q.get('id', idx + 1),  # Use DB id or fallback to order
-                'question_text': q['question_text'],
-                'question_type': q['question_type'],
-                'required': q['required'],
-                'timer_seconds': q['timer_seconds'],
-                'document_type': q.get('document_type'),
-                'category': 'custom',  # Mark as custom question set
-                'order': q['order']
-            })
-        return questions
-    
-    # Fall back to default questions
     conn = _connect()
     cur = conn.cursor()
     
-    cur.execute("SELECT * FROM interview_questions ORDER BY \"order\"")
+    cur.execute(
+        "SELECT * FROM interview_questions WHERE category = ? ORDER BY \"order\"",
+        ("onboarding_v2",),
+    )
     rows = cur.fetchall()
     conn.close()
     
@@ -470,14 +623,18 @@ def get_next_question(session_id: str) -> Optional[dict]:
     conn = _connect()
     cur = conn.cursor()
     
-    cur.execute("""
+    cur.execute(
+        """
         SELECT * FROM interview_questions iq
-        WHERE iq.question_id NOT IN (
-            SELECT question_id FROM answer_records WHERE session_id = ?
-        )
+        WHERE iq.category = ?
+            AND iq.question_id NOT IN (
+                SELECT question_id FROM answer_records WHERE session_id = ?
+            )
         ORDER BY iq."order"
         LIMIT 1
-    """, (session_id,))
+        """,
+        ("onboarding_v2", session_id),
+    )
     
     row = cur.fetchone()
     conn.close()

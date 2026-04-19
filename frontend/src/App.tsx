@@ -20,11 +20,7 @@ import VideoOnboardingMeeting from "@/pages/VideoOnboardingMeeting";
 import VideoRecords from "@/pages/VideoRecords";
 import VideoRecordDetail from "@/pages/VideoRecordDetail";
 import QuestionBuilder from "@/pages/QuestionBuilder";
-import OnboardingForm from "@/pages/OnboardingForm";
-import VerificationPage from "@/pages/VerificationPage";
-import InstructionsPage from "@/pages/InstructionsPage";
-import ThankYouPage from "@/pages/ThankYouPage";
-import LoanResultPage from "@/pages/LoanResultPage";
+import OnboardingDecision from "@/pages/OnboardingDecision";
 
 const queryClient = new QueryClient();
 
@@ -39,13 +35,9 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             
-            {/* Video Onboarding Routes (Public - Multi-Step Flow) */}
-            <Route path="/video/onboarding" element={<OnboardingForm />} />
-            <Route path="/video/verification" element={<VerificationPage />} />
-            <Route path="/video/instructions" element={<InstructionsPage />} />
+            {/* Video Onboarding Routes (Public - Interview Only) */}
             <Route path="/video/meet/:sessionId" element={<VideoOnboardingMeeting />} />
-            <Route path="/video/thank-you" element={<ThankYouPage />} />
-            <Route path="/video/loan-result/:sessionId" element={<LoanResultPage />} />
+            <Route path="/video/decision/:sessionId" element={<OnboardingDecision />} />
             
             {/* Video Onboarding HR/Records Routes */}
             <Route path="/video/records" element={<VideoRecords />} />

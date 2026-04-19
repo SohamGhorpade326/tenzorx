@@ -26,54 +26,23 @@ interface QuestionSet {
 // Predefined question sets
 const PREDEFINED_SETS: QuestionSet[] = [
   {
-    id: 'loan-origination-v1',
-    name: 'Loan Origination - Standard',
-    description: 'Complete loan application interview with document verification and financial questions',
-    category: 'Loan Origination',
+    id: 'video-onboarding-v2',
+    name: 'Video Onboarding - Standard',
+    description: 'Refactored 10-question video onboarding flow (audio only)',
+    category: 'Video Onboarding',
     isActive: true,
     createdDate: '2026-04-01',
     questions: [
-      { id: 1, text: 'Upload your Aadhar Card (Front & Back)', type: 'document_upload', required: true, timer_seconds: 120, document_type: 'aadhar' },
-      { id: 2, text: 'Upload your PAN Card', type: 'document_upload', required: true, timer_seconds: 120, document_type: 'pan' },
-      { id: 3, text: 'Upload your Salary Slip (Latest 3 months)', type: 'document_upload', required: true, timer_seconds: 120, document_type: 'salary_slip' },
-      { id: 4, text: 'Please confirm your full name and date of birth', type: 'audio', required: true, timer_seconds: 60 },
-      { id: 5, text: 'What is your current occupation?', type: 'audio', required: true, timer_seconds: 60 },
-      { id: 6, text: 'What is your approximate monthly income?', type: 'audio', required: true, timer_seconds: 90 },
-      { id: 7, text: 'What is the primary purpose of this loan?', type: 'audio', required: true, timer_seconds: 90 },
-      { id: 8, text: 'Please confirm your current address', type: 'audio', required: true, timer_seconds: 60 },
-      { id: 9, text: 'Are you currently servicing any existing loans?', type: 'yes_no', required: true, timer_seconds: 60 },
-      { id: 10, text: 'Do you consent to share your financial data for loan processing?', type: 'yes_no', required: true, timer_seconds: 60 },
-      { id: 11, text: 'Please read aloud: "I confirm that all information provided is accurate and complete..."', type: 'audio', required: true, timer_seconds: 120 },
-    ],
-  },
-  {
-    id: 'employee-onboarding-v1',
-    name: 'Employee Onboarding - HR',
-    description: 'Standard HR onboarding questions with compliance checks',
-    category: 'HR Onboarding',
-    isActive: false,
-    createdDate: '2026-04-02',
-    questions: [
-      { id: 1, text: 'Please confirm your full name and date of birth', type: 'audio', required: true, timer_seconds: 60 },
-      { id: 2, text: 'Upload your Aadhar Card for identity verification', type: 'document_upload', required: true, timer_seconds: 120, document_type: 'aadhar' },
-      { id: 3, text: 'Upload your PAN Card for tax verification', type: 'document_upload', required: true, timer_seconds: 120, document_type: 'pan' },
-      { id: 4, text: 'Have you read and understood the company policies?', type: 'yes_no', required: true, timer_seconds: 60 },
-      { id: 5, text: 'Do you agree to comply with confidentiality terms?', type: 'yes_no', required: true, timer_seconds: 60 },
-      { id: 6, text: 'Confirm your current address and contact details', type: 'audio', required: true, timer_seconds: 90 },
-    ],
-  },
-  {
-    id: 'personal-loan-quick',
-    name: 'Personal Loan - Quick Check',
-    description: 'Simplified personal loan verification process',
-    category: 'Loan Origination',
-    isActive: false,
-    createdDate: '2026-04-03',
-    questions: [
-      { id: 1, text: 'Upload your PAN Card', type: 'document_upload', required: true, timer_seconds: 120, document_type: 'pan' },
-      { id: 2, text: 'What is your current monthly income?', type: 'audio', required: true, timer_seconds: 60 },
-      { id: 3, text: 'What is the loan purpose?', type: 'audio', required: true, timer_seconds: 90 },
-      { id: 4, text: 'Do you have any existing loans?', type: 'yes_no', required: true, timer_seconds: 60 },
+      { id: 1, text: 'Can you please state your full name as per your PAN or Aadhaar?', type: 'audio', required: true, timer_seconds: 60 },
+      { id: 2, text: 'What is your date of birth?', type: 'audio', required: true, timer_seconds: 60 },
+      { id: 3, text: 'What is your current residential address?', type: 'audio', required: true, timer_seconds: 90 },
+      { id: 4, text: 'Are you salaried or self-employed?', type: 'audio', required: true, timer_seconds: 60 },
+      { id: 5, text: 'What is your current monthly or annual income?', type: 'audio', required: true, timer_seconds: 90 },
+      { id: 6, text: 'Where are you currently working or what is your business name?', type: 'audio', required: true, timer_seconds: 90 },
+      { id: 7, text: 'What is the purpose of the loan you are applying for?', type: 'audio', required: true, timer_seconds: 90 },
+      { id: 8, text: 'What loan amount are you looking for and for how long (tenure)?', type: 'audio', required: true, timer_seconds: 90 },
+      { id: 9, text: 'Do you currently have any existing loans or EMIs?', type: 'audio', required: true, timer_seconds: 60 },
+      { id: 10, text: 'Do you consent to this video-based onboarding and confirm that all the information provided is accurate?', type: 'audio', required: true, timer_seconds: 60 },
     ],
   },
 ];
@@ -288,7 +257,7 @@ export default function QuestionBuilder() {
               onClick={() => setViewMode('create-method')}
               className="text-blue-600 hover:text-blue-700 font-semibold mb-4 flex items-center gap-2"
             >
-              ← Back to Method Selection
+                                placeholder="e.g., pan_aadhaar, salary_proof, other"
             </motion.button>
             <h1 className="text-3xl font-bold text-blue-900">📚 Select Questions</h1>
             <p className="text-gray-600 mt-1">Choose from our library of questions</p>

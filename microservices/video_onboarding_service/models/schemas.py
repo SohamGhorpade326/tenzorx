@@ -123,3 +123,33 @@ class SessionSummary(BaseModel):
 class SessionListResponse(BaseModel):
     sessions: List[SessionSummary]
     total: int
+
+
+# ── Post-Onboarding Decision ─────────────────────────────────────
+
+class DecisionQA(BaseModel):
+    question: str
+    answer: str
+
+
+class DecisionDocuments(BaseModel):
+    pan_uploaded: bool = False
+    aadhaar_uploaded: bool = False
+    salary_slip_uploaded: bool = False
+
+
+class GroqDecisionRequest(BaseModel):
+    responses: List[DecisionQA]
+    cv_estimated_age: Optional[int] = None
+    declared_age: Optional[int] = None
+    age_difference: Optional[int] = None
+    age_status: Optional[str] = None
+    documents: DecisionDocuments
+
+
+class GroqDecisionResponse(BaseModel):
+    category: str
+    reason: str
+    risk_level: str
+    loan_amount_range: Optional[str] = None
+    confidence: int
