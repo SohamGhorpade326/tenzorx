@@ -187,6 +187,8 @@ The system classifies users into:
 - Credit bureau integration
 - Multi-language support
 - Production-grade deployment
+- Meeting Intelligence for Assisted Onboarding
+- Orchestrator Agent to handle other worker agents.
 
 ---
 
