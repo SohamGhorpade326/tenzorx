@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listVideoSessions, deleteVideoSession, VideoSessionResponse } from "@/lib/video-api";
+import { createVideoSession, deleteVideoSession, listVideoSessions, startVideoOnboarding, VideoSessionResponse } from "@/lib/video-api";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertCircle, ChevronRight, FileText, CheckCircle, Clock, AlertTriangle, Trash2 } from "lucide-react";
@@ -12,6 +12,7 @@ export default function VideoRecords() {
   const [sessions, setSessions] = useState<VideoSessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadSessions();
@@ -29,6 +30,32 @@ export default function VideoRecords() {
       console.error("Error loading sessions:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateAndStart = async () => {
+    if (creating) return;
+
+    const employee_name = window.prompt("Applicant full name:");
+    if (!employee_name) return;
+
+    const employee_id = window.prompt("Applicant ID:");
+    if (!employee_id) return;
+
+    const employee_email = window.prompt("Applicant email (optional):") || undefined;
+
+    try {
+      setCreating(true);
+      const session = await createVideoSession({ employee_name, employee_id, employee_email });
+      await startVideoOnboarding(session.session_id);
+      toast.success("Interview started");
+      navigate(`/video/meet/${session.session_id}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to start interview";
+      toast.error(errorMessage);
+      console.error("Error creating/starting interview:", err);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -132,8 +159,27 @@ export default function VideoRecords() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-3xl font-bold text-blue-900">🏦 Interview Records</h1>
-            <p className="text-gray-600 mt-1">View all video onboarding sessions and application status</p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-blue-900">🏦 Interview Records</h1>
+                <p className="text-gray-600 mt-1">View all video onboarding sessions and application status</p>
+              </div>
+
+              <button
+                onClick={handleCreateAndStart}
+                disabled={creating}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {creating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>Create New Interview</>
+                )}
+              </button>
+            </div>
           </motion.div>
         </div>
       </div>
@@ -184,6 +230,20 @@ export default function VideoRecords() {
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg font-medium">No records found yet</p>
             <p className="text-gray-400 text-sm mt-2">Start a new video interview to see records here</p>
+            <button
+              onClick={handleCreateAndStart}
+              disabled={creating}
+              className="mt-6 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                <>Create New Interview</>
+              )}
+            </button>
           </motion.div>
         ) : (
           <motion.div
