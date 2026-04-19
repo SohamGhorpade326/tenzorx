@@ -6,11 +6,36 @@ Based on meeting workflow implementation.
 """
 
 import os
+import subprocess
 import tempfile
 import time
 from typing import Optional
 
 from config import WHISPER_MODEL_SIZE, WHISPER_LANGUAGE, DEMO_MODE
+
+_WHISPER_MODEL = None
+_WHISPER_MODEL_SIZE = None
+
+
+def convert_to_wav(input_path, output_path):
+    subprocess.run([
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-ar", "16000",
+        "-ac", "1",
+        output_path
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def _get_whisper_model():
+    global _WHISPER_MODEL, _WHISPER_MODEL_SIZE
+    if _WHISPER_MODEL is None or _WHISPER_MODEL_SIZE != WHISPER_MODEL_SIZE:
+        import whisper
+
+        print(f"[TranscriptionService] Loading Whisper model ({WHISPER_MODEL_SIZE})...")
+        _WHISPER_MODEL = whisper.load_model(WHISPER_MODEL_SIZE)
+        _WHISPER_MODEL_SIZE = WHISPER_MODEL_SIZE
+    return _WHISPER_MODEL
 
 
 def transcribe_audio_blob(audio_bytes: bytes, audio_format: str = "webm", run_id: Optional[str] = None) -> str:
@@ -34,9 +59,7 @@ def transcribe_audio_blob(audio_bytes: bytes, audio_format: str = "webm", run_id
     
     start = time.time()
     try:
-        import whisper
-        
-        print(f"[TranscriptionService] Loading Whisper model ({WHISPER_MODEL_SIZE})...")
+        model = _get_whisper_model()
         
         # Save blob to temp file (Whisper needs file path)
         suffix = f".{audio_format}" if audio_format else ".webm"
@@ -45,39 +68,65 @@ def transcribe_audio_blob(audio_bytes: bytes, audio_format: str = "webm", run_id
             tmp_path = tmp.name
         
         try:
-            # Load model
-            model = whisper.load_model(WHISPER_MODEL_SIZE)
-            
+            # Convert to WAV for better Whisper accuracy
+            wav_path = tmp_path.replace(f".{audio_format}", ".wav")
+            convert_to_wav(tmp_path, wav_path)
+
             # Prepare transcription prompt
             prompt = (
-                "Video onboarding interview response. "
-                "Preserve all spoken details accurately. "
-                "Improve readability with proper punctuation and capitalization."
-            )
+                "This is a financial onboarding interview. "
+                "The user may state their full name, address, income, and personal details. "
+                "It is VERY IMPORTANT to capture names, numbers, and proper nouns accurately. "
+                "Do not replace names with common words. Preserve exact spelling as spoken."
+        )
             
             # Transcribe
-            print(f"[TranscriptionService] Transcribing audio from {tmp_path}...")
+            print(f"[TranscriptionService] Transcribing audio from {wav_path}...")
             result = model.transcribe(
-                tmp_path,
+                wav_path,
                 language=WHISPER_LANGUAGE,
                 temperature=0,
-                best_of=3,
+                best_of=5,
                 beam_size=5,
-                condition_on_previous_text=True,
+                condition_on_previous_text=False,
                 fp16=False,
                 initial_prompt=prompt,
             )
             
             text = result.get("text", "").strip()
+
+            # Retry for short/low-confidence responses
+            if len(text.split()) <= 3:
+                print("[TranscriptionService] Low confidence, retrying...")
+                result_retry = model.transcribe(
+                    wav_path,
+                    language=WHISPER_LANGUAGE,
+                    temperature=0.3,
+                    best_of=5,
+                    beam_size=5,
+                    condition_on_previous_text=False,
+                    fp16=False,
+                    initial_prompt=prompt,
+                )
+                text = result_retry.get("text", "").strip()
+
             elapsed_ms = int((time.time() - start) * 1000)
-            
+
             print(f"[TranscriptionService] ✅ Transcribed {len(text)} chars in {elapsed_ms}ms")
             print(f"[TranscriptionService] Text: {text[:100]}...")
-            
+
+            # Post-processing: clean up name phrases
+            def clean_name(t):
+                return t.replace("my name is", "").strip().title()
+
+            text = clean_name(text)
+
             return text
         
         finally:
             os.unlink(tmp_path)
+            if os.path.exists(wav_path):
+                os.unlink(wav_path)
     
     except Exception as e:
         elapsed_ms = int((time.time() - start) * 1000)
