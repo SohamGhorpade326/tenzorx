@@ -77,7 +77,7 @@ LoanPilot replaces static workflows with a **dynamic AI-driven pipeline**:
 
 - 🎤 **Speech-to-Text (Whisper)** for real-time transcription  
 - 🧑‍💻 **Computer Vision** for age estimation  
-- 🧠 **LLM-based decision engine (Groq API)**  
+- 🧠 **LLM-based decision engine**  
 - 📄 **Document upload & verification**  
 - 🔄 **Adaptive questioning (agentic behavior)**  
 - ⚡ **Real-time onboarding & decisioning**
