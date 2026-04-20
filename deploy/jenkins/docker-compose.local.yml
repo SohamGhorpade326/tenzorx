@@ -1,0 +1,7 @@
+services:
+  jenkins:
+    volumes:
+      - jenkins_home:/var/jenkins_home
+
+volumes:
+  jenkins_home:

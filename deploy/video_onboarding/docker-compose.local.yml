@@ -1,0 +1,13 @@
+services:
+  api:
+    volumes:
+      - video_onboarding_data:/data
+      - video_onboarding_uploads:/uploads
+
+  nginx:
+    ports:
+      - "8084:80"
+
+volumes:
+  video_onboarding_data:
+  video_onboarding_uploads:
