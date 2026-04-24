@@ -1,0 +1,120 @@
+version: '3.9'
+
+services:
+  # Frontend React application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: workstream-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_VIDEO_API_URL=http://localhost:8004
+    depends_on:
+      - meeting-workflow
+      - video-onboarding
+    networks:
+      - workstream-network
+    restart: unless-stopped
+
+  # Meeting Workflow Microservice
+  meeting-workflow:
+    build:
+      context: ./microservices/meetingworkflow
+      dockerfile: Dockerfile
+    container_name: workstream-meeting-workflow
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@db:5432/workstream}
+    volumes:
+      - ./microservices/meetingworkflow/data:/app/data
+    depends_on:
+      - db
+    networks:
+      - workstream-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Video Onboarding Microservice
+  video-onboarding:
+    build:
+      context: ./microservices/video_onboarding_service
+      dockerfile: Dockerfile
+    container_name: workstream-video-onboarding
+    ports:
+      - "8004:8004"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@db:5432/workstream}
+      - UPLOADS_DIR=/app/uploads
+    volumes:
+      - ./microservices/video_onboarding_service/uploads:/app/uploads
+    depends_on:
+      - db
+    networks:
+      - workstream-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: workstream-db
+    environment:
+      - POSTGRES_USER=workstream_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeMe123}
+      - POSTGRES_DB=workstream_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db_init:/docker-entrypoint-initdb.d
+    networks:
+      - workstream-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workstream_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: workstream-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - meeting-workflow
+      - video-onboarding
+    networks:
+      - workstream-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  workstream-network:
+    driver: bridge

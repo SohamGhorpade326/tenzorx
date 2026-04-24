@@ -1,9 +1,9 @@
 /**
  * API client for MeetingMind backend.
- * Base URL defaults to VITE_API_URL env var or http://localhost:8000
+ * Base URL defaults to VITE_API_URL env var or /api/meeting (through Nginx proxy)
  */
 
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const BASE_URL = (import.meta.env.VITE_API_URL || '/api/meeting').replace(/\/$/, '');
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {

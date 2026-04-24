@@ -15,16 +15,31 @@ from fastapi.encoders import jsonable_encoder
 # ─────────────────────────────────────────────────
 
 _client: Optional[Client] = None
+_connection_failed = False
 
 
-def get_client() -> Client:
-    global _client
+def get_client() -> Optional[Client]:
+    """Get Supabase client with graceful fallback."""
+    global _client, _connection_failed
+    
+    # Skip if we already know connection failed
+    if _connection_failed:
+        return None
+    
     if _client is None:
         if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
-            raise RuntimeError(
-                "SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in .env"
-            )
-        _client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+            _connection_failed = True
+            print("[DB] ⚠️  SUPABASE credentials not set - using fallback mode")
+            return None
+        
+        try:
+            _client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+            print("[DB] ✅ Connected to Supabase")
+        except Exception as e:
+            _connection_failed = True
+            print(f"[DB] ⚠️  Failed to connect to Supabase: {type(e).__name__} - using fallback mode")
+            return None
+    
     return _client
 
 
@@ -287,43 +302,68 @@ def insert_task(task: Task) -> dict:
 
 def get_tasks(status: Optional[str] = None, owner: Optional[str] = None, limit: int = 200) -> List[dict]:
     db = get_client()
-    query = db.table("tasks").select("*").order("created_at", desc=True).limit(limit)
-    if status and status != "ALL":
-        query = query.eq("status", status)
-    if owner and owner != "ALL":
-        query = query.eq("owner", owner)
-    res = query.execute()
-    return res.data
+    if db is None:
+        print(f"[DB] Returning empty task list (database unavailable)")
+        return []
+    
+    try:
+        query = db.table("tasks").select("*").order("created_at", desc=True).limit(limit)
+        if status and status != "ALL":
+            query = query.eq("status", status)
+        if owner and owner != "ALL":
+            query = query.eq("owner", owner)
+        res = query.execute()
+        return res.data
+    except Exception as e:
+        print(f"[DB] Error fetching tasks: {type(e).__name__} - returning empty list")
+        return []
 
 
 def get_task(task_id: str) -> Optional[dict]:
     db = get_client()
-    res = db.table("tasks").select("*").eq("id", task_id).execute()
-    return res.data[0] if res.data else None
+    if db is None:
+        return None
+    try:
+        res = db.table("tasks").select("*").eq("id", task_id).execute()
+        return res.data[0] if res.data else None
+    except Exception:
+        return None
 
 
 def update_task(task_id: str, updates: dict) -> dict:
     db = get_client()
-    updates["updated_at"] = _now()
-    if "status" in updates:
-        updates["last_status_change"] = _now()
-        # Record history
-        db.table("task_status_history").insert({
-            "id": _new_id(),
-            "task_id": task_id,
-            "status": updates["status"],
-            "changed_at": updates["updated_at"],
-            "changed_by": updates.pop("changed_by", "System"),
-            "reason": updates.pop("reason", None),
-        }).execute()
-    res = db.table("tasks").update(updates).eq("id", task_id).execute()
-    return res.data[0] if res.data else {}
+    if db is None:
+        return {}
+    
+    try:
+        updates["updated_at"] = _now()
+        if "status" in updates:
+            updates["last_status_change"] = _now()
+            # Record history
+            db.table("task_status_history").insert({
+                "id": _new_id(),
+                "task_id": task_id,
+                "status": updates["status"],
+                "changed_at": updates["updated_at"],
+                "changed_by": updates.pop("changed_by", "System"),
+                "reason": updates.pop("reason", None),
+            }).execute()
+        res = db.table("tasks").update(updates).eq("id", task_id).execute()
+        return res.data[0] if res.data else {}
+    except Exception as e:
+        print(f"[DB] Error updating task: {type(e).__name__}")
+        return {}
 
 
 def get_task_status_history(task_id: str) -> List[dict]:
     db = get_client()
-    res = db.table("task_status_history").select("*").eq("task_id", task_id).order("changed_at").execute()
-    return res.data
+    if db is None:
+        return []
+    try:
+        res = db.table("task_status_history").select("*").eq("task_id", task_id).order("changed_at").execute()
+        return res.data
+    except Exception:
+        return []
 
 
 # ─────────────────────────────────────────────────
@@ -332,22 +372,29 @@ def get_task_status_history(task_id: str) -> List[dict]:
 
 def insert_audit_event(event: AuditEvent) -> dict:
     db = get_client()
-    data = {
-        "id": event.id or _new_id(),
-        "run_id": event.run_id,
-        "agent": event.agent,
-        "action": event.action,
-        "status": event.status.value if event.status else "SUCCESS",
-        "duration_ms": event.duration_ms,
-        "summary": event.summary,
-        "input_payload": jsonable_encoder(event.input_payload) if event.input_payload is not None else None,
-        "output_payload": jsonable_encoder(event.output_payload) if event.output_payload is not None else None,
-        "error_message": event.error_message,
-        "retry_count": event.retry_count,
-        "created_at": event.created_at.isoformat() if event.created_at else _now(),
-    }
-    res = db.table("audit_events").insert(data).execute()
-    return res.data[0]
+    if db is None:
+        return {}
+    
+    try:
+        data = {
+            "id": event.id or _new_id(),
+            "run_id": event.run_id,
+            "agent": event.agent,
+            "action": event.action,
+            "status": event.status.value if event.status else "SUCCESS",
+            "duration_ms": event.duration_ms,
+            "summary": event.summary,
+            "input_payload": jsonable_encoder(event.input_payload) if event.input_payload is not None else None,
+            "output_payload": jsonable_encoder(event.output_payload) if event.output_payload is not None else None,
+            "error_message": event.error_message,
+            "retry_count": event.retry_count,
+            "created_at": event.created_at.isoformat() if event.created_at else _now(),
+        }
+        res = db.table("audit_events").insert(data).execute()
+        return res.data[0]
+    except Exception as e:
+        print(f"[DB] Error inserting audit event: {type(e).__name__}")
+        return {}
 
 
 def get_audit_events(
@@ -421,37 +468,76 @@ def update_escalation_status(escalation_id: str, status: str, approved_by: str =
 
 def get_dashboard_metrics() -> dict:
     db = get_client()
+    
+    # Fallback to empty/mock data if database unavailable
+    if db is None:
+        print("[DB] Database unavailable, returning mock dashboard metrics")
+        return {
+            "total_tasks": 0,
+            "overdue_count": 0,
+            "at_risk_count": 0,
+            "done_count": 0,
+            "escalations_sent": 0,
+            "recent_pipeline_runs": [],
+            "task_status_distribution": [
+                {"name": "PENDING", "value": 0, "fill": "hsl(220, 9%, 46%)"},
+                {"name": "AT_RISK", "value": 0, "fill": "hsl(38, 92%, 50%)"},
+                {"name": "OVERDUE", "value": 0, "fill": "hsl(0, 84%, 60%)"},
+                {"name": "DONE", "value": 0, "fill": "hsl(160, 84%, 39%)"},
+                {"name": "BLOCKED", "value": 0, "fill": "hsl(25, 95%, 53%)"},
+            ],
+            "agent_activity": [],
+        }
+    
+    try:
+        tasks_res = db.table("tasks").select("status, priority, created_at").execute()
+        tasks = tasks_res.data
 
-    tasks_res = db.table("tasks").select("status, priority, created_at").execute()
-    tasks = tasks_res.data
+        total = len(tasks)
+        overdue = sum(1 for t in tasks if t["status"] == "OVERDUE")
+        at_risk = sum(1 for t in tasks if t["status"] == "AT_RISK")
+        done = sum(1 for t in tasks if t["status"] == "DONE")
+        pending = sum(1 for t in tasks if t["status"] == "PENDING")
+        blocked = sum(1 for t in tasks if t["status"] == "BLOCKED")
 
-    total = len(tasks)
-    overdue = sum(1 for t in tasks if t["status"] == "OVERDUE")
-    at_risk = sum(1 for t in tasks if t["status"] == "AT_RISK")
-    done = sum(1 for t in tasks if t["status"] == "DONE")
-    pending = sum(1 for t in tasks if t["status"] == "PENDING")
-    blocked = sum(1 for t in tasks if t["status"] == "BLOCKED")
+        esc_res = db.table("escalations").select("status").eq("status", "SENT").execute()
+        escalations_sent = len(esc_res.data)
 
-    esc_res = db.table("escalations").select("status").eq("status", "SENT").execute()
-    escalations_sent = len(esc_res.data)
+        pipeline_runs = get_pipeline_runs(limit=10)
 
-    pipeline_runs = get_pipeline_runs(limit=10)
+        task_distribution = [
+            {"name": "PENDING", "value": pending, "fill": "hsl(220, 9%, 46%)"},
+            {"name": "AT_RISK", "value": at_risk, "fill": "hsl(38, 92%, 50%)"},
+            {"name": "OVERDUE", "value": overdue, "fill": "hsl(0, 84%, 60%)"},
+            {"name": "DONE", "value": done, "fill": "hsl(160, 84%, 39%)"},
+            {"name": "BLOCKED", "value": blocked, "fill": "hsl(25, 95%, 53%)"},
+        ]
 
-    task_distribution = [
-        {"name": "PENDING", "value": pending, "fill": "hsl(220, 9%, 46%)"},
-        {"name": "AT_RISK", "value": at_risk, "fill": "hsl(38, 92%, 50%)"},
-        {"name": "OVERDUE", "value": overdue, "fill": "hsl(0, 84%, 60%)"},
-        {"name": "DONE", "value": done, "fill": "hsl(160, 84%, 39%)"},
-        {"name": "BLOCKED", "value": blocked, "fill": "hsl(25, 95%, 53%)"},
-    ]
-
-    return {
-        "total_tasks": total,
-        "overdue_count": overdue,
-        "at_risk_count": at_risk,
-        "done_count": done,
-        "escalations_sent": escalations_sent,
-        "recent_pipeline_runs": pipeline_runs,
-        "task_status_distribution": task_distribution,
-        "agent_activity": [],
-    }
+        return {
+            "total_tasks": total,
+            "overdue_count": overdue,
+            "at_risk_count": at_risk,
+            "done_count": done,
+            "escalations_sent": escalations_sent,
+            "recent_pipeline_runs": pipeline_runs,
+            "task_status_distribution": task_distribution,
+            "agent_activity": [],
+        }
+    except Exception as e:
+        print(f"[DB] Error getting dashboard metrics: {type(e).__name__} - returning empty metrics")
+        return {
+            "total_tasks": 0,
+            "overdue_count": 0,
+            "at_risk_count": 0,
+            "done_count": 0,
+            "escalations_sent": 0,
+            "recent_pipeline_runs": [],
+            "task_status_distribution": [
+                {"name": "PENDING", "value": 0, "fill": "hsl(220, 9%, 46%)"},
+                {"name": "AT_RISK", "value": 0, "fill": "hsl(38, 92%, 50%)"},
+                {"name": "OVERDUE", "value": 0, "fill": "hsl(0, 84%, 60%)"},
+                {"name": "DONE", "value": 0, "fill": "hsl(160, 84%, 39%)"},
+                {"name": "BLOCKED", "value": 0, "fill": "hsl(25, 95%, 53%)"},
+            ],
+            "agent_activity": [],
+        }

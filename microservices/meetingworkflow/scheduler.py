@@ -16,7 +16,7 @@ scheduler = BackgroundScheduler()
 def run_tracker_cycle():
     """Full tracker → escalation cycle."""
     run_id = f"sched_{uuid.uuid4().hex[:6]}"
-    print(f"[Scheduler] 🔄 Tracker cycle starting (run_id={run_id})...")
+    print(f"[SCHEDULER] >> Tracker cycle starting (run_id={run_id})...")
 
     try:
         from agents import tracker_agent, escalation_agent
@@ -24,13 +24,17 @@ def run_tracker_cycle():
 
         overdue_stalled = result.get("overdue_or_stalled", [])
         if overdue_stalled:
-            print(f"[Scheduler] ⚠️  {len(overdue_stalled)} overdue/stalled tasks — running EscalationAgent")
+            print(f"[SCHEDULER] WARNING: {len(overdue_stalled)} overdue/stalled tasks — running EscalationAgent")
             escalation_agent.run(overdue_stalled_tasks=overdue_stalled, run_id=run_id)
         else:
-            print(f"[Scheduler] ✅ No overdue tasks — all good")
+            print(f"[SCHEDULER] OK: No overdue tasks — all good")
 
+    except ConnectionError as e:
+        # Network/DNS error - log but continue (temporary connectivity issue)
+        print(f"[SCHEDULER] WARNING: Connection error (will retry): {type(e).__name__}")
     except Exception as e:
-        print(f"[Scheduler] ❌ Error in tracker cycle: {e}")
+        # Any other error - log but don't crash
+        print(f"[SCHEDULER] ERROR: Error in tracker cycle: {type(e).__name__}: {e}")
 
 
 def start_scheduler():
@@ -46,7 +50,7 @@ def start_scheduler():
         next_run_time=datetime.now(timezone.utc),  # Run immediately on startup too
     )
     scheduler.start()
-    print(f"[Scheduler] Started — TrackerAgent runs every {TRACKER_INTERVAL_MINUTES} minutes")
+    print(f"[SCHEDULER] OK: Started — TrackerAgent runs every {TRACKER_INTERVAL_MINUTES} minutes")
 
 
 def stop_scheduler():

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createVideoSession, deleteVideoSession, listVideoSessions, startVideoOnboarding, VideoSessionResponse } from "@/lib/video-api";
+import { createVideoOnboardingSession, deleteVideoSession, listVideoSessions, startVideoOnboarding, VideoSessionResponse } from "@/lib/video-api";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, AlertCircle, ChevronRight, FileText, CheckCircle, Clock, AlertTriangle, Trash2 } from "lucide-react";
@@ -46,7 +46,7 @@ export default function VideoRecords() {
 
     try {
       setCreating(true);
-      const session = await createVideoSession({ employee_name, employee_id, employee_email });
+      const session = await createVideoOnboardingSession({ employee_name, employee_id, employee_email });
       await startVideoOnboarding(session.session_id);
       toast.success("Interview started");
       navigate(`/video/meet/${session.session_id}`);

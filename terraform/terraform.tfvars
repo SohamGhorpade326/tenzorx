@@ -1,0 +1,15 @@
+aws_region             = "us-east-1"
+environment            = "production"
+instance_type          = "t3.medium"
+root_volume_size       = 50
+instance_name          = "workstream-ai-server"
+key_pair_name          = "workstream-new-key"
+enable_detailed_monitoring = false
+
+# Restrict SSH to your IP for better security
+# allowed_ssh_cidrs      = ["YOUR_IP/32"]
+
+tags = {
+  Team       = "Engineering"
+  CostCenter = "Engineering"
+}

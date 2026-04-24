@@ -59,17 +59,17 @@ app.include_router(calendar.router)
 
 @app.on_event("startup")
 async def startup_event():
-    print("🚀 MeetingMind API starting...")
+    print("[INFO] MeetingMind API starting...")
     try:
         start_scheduler()
-        print("✅ APScheduler started")
+        print("[OK] APScheduler started")
     except Exception as e:
-        print(f"⚠️  Scheduler failed to start: {e}")
+        print(f"[WARN] Scheduler failed to start: {e}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("🛑 MeetingMind API shutting down...")
+    print("[INFO] MeetingMind API shutting down...")
 
 
 # ─────────────────────────────────────────────────
