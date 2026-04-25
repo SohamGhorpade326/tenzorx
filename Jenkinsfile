@@ -39,18 +39,18 @@ pipeline {
                 script {
                     sh '''
                         # Install SonarQube scanner if not present
-                        if [ ! -f sonar-scanner-cli.zip ]; then
-                            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.10.0.2635-linux.zip
+                        if [ ! -d sonar-scanner-4.10.0.2635-linux ]; then
+                            curl -fsSL -o sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.10.0.2635-linux.zip
                             unzip -q sonar-scanner-cli.zip
                         fi
-                        
-                                                # Run SonarQube analysis
-                                                ./sonar-scanner-4.10.0.2635-linux/bin/sonar-scanner \
-                                                    -Dsonar.projectKey=workstream-ai \
-                                                    -Dsonar.projectName="Workstream AI" \
-                                                    -Dsonar.sources=frontend/src,microservices \
-                                                    -Dsonar.host.url=${SONARQUBE_SERVER} \
-                                                    -Dsonar.login=${SONARQUBE_TOKEN} || echo "SonarQube analysis failed - continuing anyway"
+
+                        # Run SonarQube analysis
+                        ./sonar-scanner-4.10.0.2635-linux/bin/sonar-scanner \
+                            -Dsonar.projectKey=workstream-ai \
+                            -Dsonar.projectName="Workstream AI" \
+                            -Dsonar.sources=frontend/src,microservices \
+                            -Dsonar.host.url=${SONARQUBE_SERVER} \
+                            -Dsonar.login=${SONARQUBE_TOKEN} || echo "SonarQube analysis failed - continuing anyway"
                     '''
                 }
             }
