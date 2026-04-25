@@ -3,7 +3,7 @@
 ## 📋 Prerequisites Checklist
 
 - [ ] AWS Account created
-- [ ] AWS CLI installed and configured
+- [ ] AWS CLI installed and configure
 - [ ] Terraform installed
 - [ ] Git installed
 - [ ] EC2 Key Pair created/downloaded
