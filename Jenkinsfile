@@ -40,6 +40,7 @@ pipeline {
                     sh '''
                         # Run SonarQube analysis using the official scanner container
                         docker run --rm \
+                            --network host \
                             -v "$PWD:/usr/src" \
                             -w /usr/src \
                             sonarsource/sonar-scanner-cli:latest \
@@ -58,9 +59,12 @@ pipeline {
                 echo '✅ Running unit tests...'
                 script {
                     sh '''
-                        cd frontend
-                        npm install
-                        npm run test -- --coverage --watchAll=false || echo "Tests completed with warnings"
+                        docker run --rm \
+                            -v "$PWD/frontend:/app" \
+                            -w /app \
+                            node:22-alpine \
+                            sh -lc "npm ci && npm run test -- --coverage --watchAll=false" \
+                            || echo "Tests completed with warnings"
                     '''
                 }
             }
