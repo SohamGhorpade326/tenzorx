@@ -3,6 +3,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+ENV PYTHONDONTWRITEBYTECODE=1
+
 # Install system dependencies including ffmpeg for video processing
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -12,8 +14,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies without bytecode compilation
+RUN pip install --no-cache-dir --no-compile -r requirements.txt
 
 # Copy application code
 COPY . .
