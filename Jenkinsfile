@@ -48,7 +48,8 @@ pipeline {
                             -Dsonar.projectKey=workstream-ai \
                             -Dsonar.projectName="Workstream AI" \
                             -Dsonar.host.url=${SONARQUBE_SERVER} \
-                            -Dsonar.sources=/usr/src/frontend/src,/usr/src/microservices/meetingworkflow,/usr/src/microservices/video_onboarding_service \
+                            -Dsonar.sources=. \
+                            -Dsonar.inclusions=frontend/src/**/*,microservices/meetingworkflow/**/*.py,microservices/video_onboarding_service/**/*.py \
                             -Dsonar.exclusions=frontend/dist,frontend/node_modules,frontend/public,frontend/venv,microservices/**/venv,microservices/**/__pycache__,**/dist,**/node_modules \
                             -Dsonar.token=${SONARQUBE_TOKEN}
                     '''
