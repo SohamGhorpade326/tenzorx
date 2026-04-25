@@ -64,6 +64,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 .installed.cfg
+!frontend/src/lib/
+!frontend/src/lib/**
 
 # Testing and coverage
 .pytest_cache/
