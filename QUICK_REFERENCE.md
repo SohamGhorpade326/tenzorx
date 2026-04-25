@@ -6,7 +6,7 @@
 - [ ] AWS CLI installed and configure
 - [ ] Terraform installed
 - [ ] Git installed
-- [ ] EC2 Key Pair created/downloaded
+- [ ] EC2 Key Pair created/downloade
 
 ---
 
