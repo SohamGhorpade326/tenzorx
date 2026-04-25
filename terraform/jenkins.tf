@@ -64,7 +64,7 @@ resource "aws_instance" "jenkins" {
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
   root_block_device {
     volume_size           = var.jenkins_volume_size
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     delete_on_termination = true
   }
 
