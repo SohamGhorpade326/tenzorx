@@ -5,6 +5,7 @@ pipeline {
         DOCKER_REGISTRY = "docker.io"
         GITHUB_REPO = "SohamGhorpade326/tenzorx"
         SONARQUBE_SERVER = "http://localhost:9000"
+        SONARQUBE_TOKEN = credentials('sonarqube-token')
     }
 
     stages {
@@ -48,7 +49,7 @@ pipeline {
                             -Dsonar.projectName="Workstream AI" \
                             -Dsonar.host.url=${SONARQUBE_SERVER} \
                             -Dsonar.sources=frontend/src,microservices \
-                            -Dsonar.token=${SONARQUBE_TOKEN} || echo "SonarQube analysis failed - continuing anyway"
+                            -Dsonar.token=${SONARQUBE_TOKEN}
                     '''
                 }
             }
