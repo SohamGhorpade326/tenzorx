@@ -6,10 +6,9 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Install system dependencies including ffmpeg for video processing
-RUN apt-get update && apt-get install -y \
-    gcc \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
 COPY requirements.txt .
