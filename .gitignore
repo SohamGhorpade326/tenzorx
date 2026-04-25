@@ -105,3 +105,7 @@ microservices/meetingworkflow/db/*.db
 
 # Ignore specific large files or uploads if they end up here
 /uploads/
+".terraform/" 
+"*.tfstate" 
+"*.tfstate.*" 
+"terraform/.terraform.lock.hcl" 
