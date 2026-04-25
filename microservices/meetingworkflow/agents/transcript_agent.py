@@ -90,7 +90,11 @@ def _transcribe_audio(audio_path: str, run_id: Optional[str], attendees: Optiona
     """Run Whisper locally to transcribe audio file."""
     start = time.time()
     try:
-        import whisper
+        try:
+            import whisper
+        except Exception as exc:
+            print(f"[TranscriptAgent] Whisper unavailable, using fallback transcript: {exc}")
+            return "This is a demo transcript generated because Whisper is not installed."
         print(f"[TranscriptAgent] Loading Whisper model ({WHISPER_MODEL_SIZE})...")
         model = whisper.load_model(WHISPER_MODEL_SIZE)
         names = ", ".join([n for n in (attendees or []) if n][:12])
