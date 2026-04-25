@@ -38,19 +38,16 @@ pipeline {
                 echo '🔍 Running SonarQube code quality analysis...'
                 script {
                     sh '''
-                        # Install SonarQube scanner if not present
-                        if [ ! -d sonar-scanner-4.10.0.2635-linux ]; then
-                            curl -fsSL -o sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.10.0.2635-linux.zip
-                            unzip -q sonar-scanner-cli.zip
-                        fi
-
-                        # Run SonarQube analysis
-                        ./sonar-scanner-4.10.0.2635-linux/bin/sonar-scanner \
+                        # Run SonarQube analysis using the official scanner container
+                        docker run --rm \
+                            -v "$PWD:/usr/src" \
+                            -w /usr/src \
+                            sonarsource/sonar-scanner-cli:latest \
                             -Dsonar.projectKey=workstream-ai \
                             -Dsonar.projectName="Workstream AI" \
-                            -Dsonar.sources=frontend/src,microservices \
                             -Dsonar.host.url=${SONARQUBE_SERVER} \
-                            -Dsonar.login=${SONARQUBE_TOKEN} || echo "SonarQube analysis failed - continuing anyway"
+                            -Dsonar.sources=frontend/src,microservices \
+                            -Dsonar.token=${SONARQUBE_TOKEN} || echo "SonarQube analysis failed - continuing anyway"
                     '''
                 }
             }
