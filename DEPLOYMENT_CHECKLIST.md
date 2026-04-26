@@ -17,7 +17,7 @@
   # Mac: brew install terraform
   # Linux: wget https://releases.hashicorp.com/terraform/1.6.0/terraform_1.6.0_linux_amd64.zip
   ```
-  - Verify: `terraform --version`
+  - Verify: `terraform --version
 
 - [ ] **Install Git**
   - Verify: `git --version`
