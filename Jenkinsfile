@@ -63,11 +63,10 @@ pipeline {
                 script {
                     sh '''
                         docker run --rm \
-                            -v "$PWD/frontend:/app" \
+                            -v "$PWD/microservices/video_onboarding_service:/app" \
                             -w /app \
-                            node:22-alpine \
-                            sh -lc "npm ci && npm run test -- --coverage --watchAll=false" \
-                            || echo "Tests completed with warnings"
+                            python:3.11-slim \
+                            sh -lc "pip install --no-cache-dir -r requirements.txt pytest && pytest -q tests"
                     '''
                 }
             }
