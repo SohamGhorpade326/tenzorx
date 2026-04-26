@@ -66,7 +66,7 @@ pipeline {
                             -v "$PWD/microservices/video_onboarding_service:/app" \
                             -w /app \
                             python:3.11-slim \
-                            sh -lc 'python -m pip install --no-cache-dir -r /app/requirements.txt pytest && python -m pytest -q /app/tests'
+                            python -c "import subprocess, sys; subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--no-cache-dir', '-r', '/app/requirements.txt', 'pytest']); import pytest; raise SystemExit(pytest.main(['-q', '/app/tests']))"
                     '''
                 }
             }
