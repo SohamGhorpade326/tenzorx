@@ -66,7 +66,7 @@ pipeline {
                             -v "$PWD/microservices/video_onboarding_service:/app" \
                             -w /app \
                             python:3.11-slim \
-                            sh -lc 'pip install --no-cache-dir pytest -r requirements.txt && pytest -q tests'
+                            sh -lc 'python -m pip install --no-cache-dir -r /app/requirements.txt pytest && python -m pytest -q /app/tests'
                     '''
                 }
             }
