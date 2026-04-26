@@ -3,7 +3,7 @@
 ## Overview
 This guide will walk you through setting up a complete CI/CD pipeline using Jenkins and SonarQube on a separate EC2 instance.
 
-### Architecture
+### Architectur
 ```
 GitHub Repository
        ↓
