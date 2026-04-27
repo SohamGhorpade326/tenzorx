@@ -8,7 +8,6 @@
 LoanPilot is an **agentic AI-powered video onboarding system** that transforms traditional loan applications into a **real-time conversational experience**.
 
 Instead of filling long forms, users interact with an AI agent over a live video session, where their data is captured, validated, and processed instantly to generate **loan eligibility decisions and personalized offers**.
-
 ---
 ## 🎯 Problem Statement
 
